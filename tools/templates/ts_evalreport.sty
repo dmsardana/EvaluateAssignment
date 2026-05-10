@@ -1,0 +1,1059 @@
+% ============================================================
+%  ts_evalreport.sty
+%  ThinkingSouls Education - Assignment Evaluation Report Style
+% ------------------------------------------------------------
+%  Designed for: xelatex (recommended) or lualatex
+%  Author      : Mohit Sardana / ThinkingSouls
+%  Version     : 1.0 (May 2026)
+% ------------------------------------------------------------
+%  Provides:
+%    Document structure  : \tsHeader, \tsFooter
+%    Title block         : \tsStudentBlock{name}{assignment}{topic}{date}
+%    Headline score      : \tsScoreBlock{percent}{marks}{N}{band}{verdict}
+%    Promotion bar       : \tsPromotionBar{color}{label}{text}
+%    Rubric table        : \tsRubricTable
+%    Sections            : \tsSection{title}, \tsSubSection{title}
+%    Hanging bullets     : tspoints environment
+%    Per-question card   : tsQCard environment + \tsDimBox helpers
+%    Scan note           : \tsScanNote{text}
+%    Scanning tips       : tsScanTips environment, \tsTip{n}{title}{body}
+%    Disclaimer          : \tsDisclaimer
+% ============================================================
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ts_evalreport}[2026/05/09 v1.1 ThinkingSouls Evaluation Report Style]
+
+% ===== Required packages =====
+\RequirePackage{geometry}
+\RequirePackage{xcolor}
+\RequirePackage{fontspec}        % xelatex/lualatex
+\RequirePackage{unicode-math}
+\RequirePackage{fancyhdr}
+\RequirePackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\RequirePackage{enumitem}
+\RequirePackage{array}
+\RequirePackage{tabularx}
+\RequirePackage{colortbl}
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+\usetikzlibrary{fadings}
+% Fade-out fading: when applied to a white-filled shape, makes the LEFT portion
+% transparent (text visible) and the RIGHT portion opaque white (text hidden).
+% The fade starts kicking in around 40% width so the question opening is fully
+% visible and the tail fades to white at ~70% width.
+\tikzfading[
+    name=tsQFade,
+    left color=transparent!100,
+    right color=transparent!0
+]
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{ragged2e}
+\RequirePackage{microtype}
+\RequirePackage{needspace}
+\RequirePackage{qrcode}
+
+% ===== Geometry =====
+% A4 page (21 x 29.7 cm) with 2cm margins all around -> 17cm content width
+% Header band needs ~3.0cm space at the top (the 2cm margin + ~1cm of header)
+\geometry{
+    a4paper,
+    left=2.0cm, right=2.0cm,
+    top=3.4cm, bottom=2.5cm,
+    headheight=2.6cm,
+    headsep=0.4cm,
+    footskip=1.2cm
+}
+
+% Useful length: content width
+\newlength{\tsContentWidth}
+\setlength{\tsContentWidth}{17cm}
+
+% ===== Color palette =====
+\definecolor{tsRed}{HTML}{C8102E}
+\definecolor{tsDarkRed}{HTML}{9B0C24}
+\definecolor{tsText}{HTML}{1A1A1A}
+\definecolor{tsGrey}{HTML}{666666}
+\definecolor{tsLightGrey}{HTML}{E5E5E5}
+\definecolor{tsBorder}{HTML}{D4D4D4}
+\definecolor{tsGreen}{HTML}{2E8540}
+\definecolor{tsAmber}{HTML}{D97706}
+\definecolor{tsBlue}{HTML}{0066CC}
+\definecolor{tsBgLight}{HTML}{FAFAFA}
+\definecolor{tsBgGreen}{HTML}{F0F8F4}
+
+% ===== Fonts =====
+% Body: TeX Gyre Heros (Helvetica clone, free) - preferred over Helvetica which may not be installed
+% Math: Latin Modern Math (default with unicode-math)
+% Load TeX Gyre Heros from local files so the report compiles even without
+% the font installed system-wide.
+\setmainfont{texgyreheros-regular.otf}[
+    Path=./,
+    BoldFont={texgyreheros-bold.otf},
+    ItalicFont={texgyreheros-italic.otf},
+    BoldItalicFont={texgyreheros-bolditalic.otf},
+    Scale=0.92,
+    Ligatures=TeX
+]
+\setsansfont{texgyreheros-regular.otf}[
+    Path=./,
+    BoldFont={texgyreheros-bold.otf},
+    ItalicFont={texgyreheros-italic.otf},
+    BoldItalicFont={texgyreheros-bolditalic.otf},
+    Scale=0.92,
+    Ligatures=TeX
+]
+\setmathfont{latinmodern-math.otf}[Path=./]
+
+% Use sans-serif as default body
+\renewcommand{\familydefault}{\sfdefault}
+
+% ===== Page header / footer =====
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Header drawn with TikZ overlay to give us a band with logo + title
+\fancyhead[L]{%
+    \begin{tikzpicture}[remember picture, overlay]
+        % Top accent strip
+        \fill[tsRed] (current page.north west) rectangle ([yshift=-0.35cm]current page.north east);
+        % Header band - white background drawn explicitly
+        \fill[white] ([yshift=-0.35cm]current page.north west) rectangle ([yshift=-2.8cm]current page.north east);
+        % Bottom rule of header band
+        \draw[tsRed, line width=1.2pt] ([yshift=-2.8cm]current page.north west) -- ([yshift=-2.8cm]current page.north east);
+        % Logo - aligned to 2cm left margin
+        \node[anchor=north west, inner sep=0pt] at ([xshift=2.0cm, yshift=-0.65cm]current page.north west)
+            {\includegraphics[width=2.0cm]{logo.png}};
+        % Title text - 2cm + 2cm logo + 0.4cm gap = starts at 4.4cm
+        \node[anchor=north west, inner sep=0pt, align=left] at ([xshift=4.4cm, yshift=-0.85cm]current page.north west)
+            {\fontsize{14pt}{16pt}\selectfont\color{tsRed}\textbf{thinkingSouls Education}};
+        \node[anchor=north west, inner sep=0pt, align=left] at ([xshift=4.4cm, yshift=-1.45cm]current page.north west)
+            {\fontsize{9pt}{11pt}\selectfont\color{tsText}\tsHeaderBreadcrumb};
+        \node[anchor=north west, inner sep=0pt, align=left] at ([xshift=4.4cm, yshift=-1.95cm]current page.north west)
+            {\fontsize{9pt}{11pt}\selectfont\color{tsGrey}\textit{Assignment Evaluation Report}};
+        % Tier badge (top-right) - aligned to 2cm right margin (right edge at -2cm)
+        \fill[tsRed, rounded corners=4pt]
+            ([xshift=-5.0cm, yshift=-0.7cm]current page.north east)
+            rectangle
+            ([xshift=-2.0cm, yshift=-1.7cm]current page.north east);
+        \node[anchor=center, inner sep=0pt, align=center]
+            at ([xshift=-3.5cm, yshift=-1.05cm]current page.north east)
+            {\fontsize{12pt}{14pt}\selectfont\color{white}\textbf{\tsTierBadge}};
+        \node[anchor=center, inner sep=0pt, align=center]
+            at ([xshift=-3.5cm, yshift=-1.45cm]current page.north east)
+            {\fontsize{8pt}{9pt}\selectfont\color{white}\tsTierBadgeSub};
+    \end{tikzpicture}%
+}
+
+\fancyfoot[L]{%
+    \begin{tikzpicture}[remember picture, overlay]
+        \draw[tsLightGrey, line width=0.4pt]
+            ([xshift=2.0cm, yshift=1.85cm]current page.south west)
+            -- ([xshift=-2.0cm, yshift=1.85cm]current page.south east);
+        \node[anchor=south west, inner sep=0pt] at ([xshift=2.0cm, yshift=1.40cm]current page.south west)
+            {\fontsize{8pt}{10pt}\selectfont\color{tsGrey}\tsFooterLeft};
+        \node[anchor=south east, inner sep=0pt] at ([xshift=-2.0cm, yshift=1.40cm]current page.south east)
+            {\fontsize{8pt}{10pt}\selectfont\color{tsGrey} Page \thepage};
+        \node[anchor=south west, inner sep=0pt] at ([xshift=2.0cm, yshift=0.95cm]current page.south west)
+            {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey}\textit{thinkingsouls.com\ \ \textperiodcentered\ \ admin@thinkingsouls.com}};
+        \node[anchor=south east, inner sep=0pt] at ([xshift=-2.0cm, yshift=0.95cm]current page.south east)
+            {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey}\textit{\tsFooterRight}};
+    \end{tikzpicture}%
+}
+
+% Configurable header/footer text
+\newcommand{\tsHeaderBreadcrumb}{Mathematics \ \textperiodcentered\ Differential Calculus \ \textperiodcentered\ Functions \ \textperiodcentered\ Domain}
+\newcommand{\tsTierBadge}{WA}
+\newcommand{\tsTierBadgeSub}{Warm-Up}
+\newcommand{\tsFooterLeft}{Student \ \textperiodcentered\ Tier \ \textperiodcentered\ Code}
+\newcommand{\tsFooterRight}{Generated dd Mon yyyy}
+
+\newcommand{\tsSetHeader}[2]{%
+    \renewcommand{\tsHeaderBreadcrumb}{#1}%
+    \renewcommand{\tsTierBadge}{\MakeUppercase{#2}}%
+}
+\newcommand{\tsSetTier}[2]{%
+    \renewcommand{\tsTierBadge}{#1}%
+    \renewcommand{\tsTierBadgeSub}{#2}%
+}
+\newcommand{\tsSetFooter}[2]{%
+    \renewcommand{\tsFooterLeft}{#1}%
+    \renewcommand{\tsFooterRight}{#2}%
+}
+
+% ===== Title (student) block =====
+% \tsStudentBlock{Name}{Assignment}{Topic}{Date}
+% Column widths: 4.0 + 5.5 + 4.5 + 3.0 = 17cm exactly (no inter-col padding via @{})
+\newcommand{\tsStudentBlock}[4]{%
+    \par\vspace{0.2cm}
+    \noindent
+    \begin{tabular}{@{}p{4.0cm}@{}p{5.5cm}@{}p{4.5cm}@{}p{3.0cm}@{}}
+        {\fontsize{8pt}{10pt}\selectfont\color{tsGrey} STUDENT} &
+        {\fontsize{8pt}{10pt}\selectfont\color{tsGrey} ASSIGNMENT} &
+        {\fontsize{8pt}{10pt}\selectfont\color{tsGrey} TOPIC} &
+        {\fontsize{8pt}{10pt}\selectfont\color{tsGrey} EVALUATION DATE} \\[2pt]
+        {\fontsize{13pt}{15pt}\selectfont\color{tsText}\textbf{#1}} &
+        {\fontsize{11pt}{13pt}\selectfont\color{tsText}\textbf{#2}} &
+        {\fontsize{10.5pt}{12.5pt}\selectfont\color{tsText}\textbf{#3}} &
+        {\fontsize{11pt}{13pt}\selectfont\color{tsText}\textbf{#4}} \\
+    \end{tabular}
+    \par\vspace{2pt}
+    {\color{tsLightGrey}\rule{\textwidth}{0.6pt}}
+    \par\vspace{0.5cm}
+}
+
+% ===== Headline score block =====
+% \tsScoreBlock{percent}{marks}{maxmarks}{band}{bandColor}{verdict}
+\newcommand{\tsScoreBlock}[6]{%
+    \par\noindent
+    \begin{minipage}[c]{0.43\textwidth}
+        \centering
+        {\fontsize{42pt}{46pt}\selectfont\color{tsRed}\textbf{#1}\par}
+        \vspace{4pt}
+        {\fontsize{10pt}{12pt}\selectfont\color{tsGrey} #2 / #3 marks}
+    \end{minipage}%
+    \hfill%
+    \begin{minipage}[c]{0.55\textwidth}
+        \begin{tcolorbox}[
+            colback=#5, colframe=#5, boxrule=0pt, arc=2pt,
+            left=12pt, right=12pt, top=14pt, bottom=14pt,
+            halign=center, valign=center,
+            before skip=0pt, after skip=0pt
+        ]
+            {\fontsize{18pt}{22pt}\selectfont\color{white}\textbf{#4}}\\[4pt]
+            {\fontsize{9pt}{12pt}\selectfont\color{white} #6}
+        \end{tcolorbox}
+    \end{minipage}
+    \par\vspace{0.4cm}
+}
+
+% ===== Promotion verdict bar =====
+% \tsPromotionBar{accentColor}{bgColor}{LABEL}{textColor}{verdictText}{noteText}
+\newcommand{\tsPromotionBar}[6]{%
+    \noindent
+    \begin{tcolorbox}[
+        colback=#2, colframe=#1, boxrule=0pt, arc=0pt,
+        leftrule=3pt, left=10pt, right=10pt, top=8pt, bottom=8pt
+    ]
+        {\fontsize{10pt}{12pt}\selectfont\color{#1}\textbf{#3}\ }%
+        {\fontsize{10pt}{12pt}\selectfont\color{#4} #5}\\[2pt]
+        {\fontsize{8.5pt}{11pt}\selectfont\color{tsGrey} #6}
+    \end{tcolorbox}
+    \par\vspace{0.5cm}
+}
+
+% ===== Heading hierarchy =====
+% Note: All headings use \noindent to ensure flush-left alignment.
+% Document-wide \parindent is set to 0 (see end of preamble) so body
+% paragraphs also have no first-line indent - cleaner sans-serif look.
+
+% H1: page-level section (e.g. "Per-Question Evaluation"), 14pt red bold
+\newcommand{\tsHone}[1]{%
+    \par\vspace{0.5cm}%
+    \noindent{\fontsize{14pt}{17pt}\selectfont\color{tsRed}\textbf{#1}}\par\vspace{6pt}%
+    \noindent\ignorespaces%
+}
+% H2: major subsection (e.g. "Pattern Diagnosis"), 12pt red bold
+\newcommand{\tsHtwo}[1]{%
+    \par\vspace{0.4cm}%
+    \noindent{\fontsize{12pt}{15pt}\selectfont\color{tsRed}\textbf{#1}}\par\vspace{4pt}%
+    \noindent\ignorespaces%
+}
+% H3: paragraph head within section (e.g. "Strengths visible across the paper"), 11pt dark text bold
+\newcommand{\tsHthree}[1]{%
+    \par\vspace{0.25cm}%
+    \noindent{\fontsize{11pt}{13pt}\selectfont\color{tsText}\textbf{#1}}\par\vspace{3pt}%
+    \noindent\ignorespaces%
+}
+% H4: minor heading inside a card or block, 10pt red bold
+\newcommand{\tsHfour}[1]{%
+    \par\vspace{0.15cm}%
+    \noindent{\fontsize{10pt}{12pt}\selectfont\color{tsRed}\textbf{#1}}\par\vspace{2pt}%
+    \noindent\ignorespaces%
+}
+
+% Backwards-compat aliases (for existing .tex files)
+\newcommand{\tsSection}[1]{\tsHone{#1}}
+\newcommand{\tsSubSection}[1]{\tsHtwo{#1}}
+
+% Document-wide: zero first-line indent for all paragraphs (sans-serif convention)
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt plus 1pt minus 0pt}
+
+% ===== Snowflake (5-axis radar) chart =====
+% Inspired by Simply Wall Street's Portfolio Snowflake.
+% Plots 5 dimensions on a regular pentagon: CU (top), AM (top-right), SS (bottom-right),
+% NA (bottom-left), PR (top-left). Each axis is 0..100; score plotted as distance from center.
+% Usage: \tsSnowflake{cuPct}{amPct}{ssPct}{naPct}{prPct}
+% The five percentages should be integers 0..100.
+\newcommand{\tsSnowflake}[5]{%
+    \begin{tikzpicture}[scale=1.0]
+        % Pentagon vertices at 90, 162, 234, 306, 18 degrees (top, top-left, bottom-left, bottom-right, top-right)
+        % Mapping: vertex 1 (top) = CU, 2 (top-right, 18deg) = AM, 3 (bottom-right) = SS,
+        %          4 (bottom-left) = NA, 5 (top-left) = PR
+        % Radius scale: 100% = 1.7cm (compact for side-by-side, leaving room for labels)
+        \def\radius{1.7cm}
+        % Background SMOOTH grid rings at 25%, 50%, 75%, 100% (instead of pentagons -
+        % gives the chart its organic snowflake look like Simply Wall Street)
+        \foreach \pct in {25, 50, 75, 100} {
+            \draw[tsLightGrey, line width=0.4pt]
+                plot[smooth cycle, tension=0.7] coordinates {
+                    (90:\pct/100*\radius)
+                    (18:\pct/100*\radius)
+                    (306:\pct/100*\radius)
+                    (234:\pct/100*\radius)
+                    (162:\pct/100*\radius)
+                };
+        }
+        % Axis lines from center
+        \foreach \angle in {90, 162, 234, 306, 18} {
+            \draw[tsLightGrey, line width=0.4pt] (0,0) -- (\angle:\radius);
+        }
+        % Outer ring percentage labels (positioned near top-right axis where there's space)
+        \node[tsGrey, font=\fontsize{5.5pt}{6.5pt}\selectfont] at (54:\radius+0.18cm) {100\%};
+        \node[tsGrey, font=\fontsize{5.5pt}{6.5pt}\selectfont] at (54:0.425cm) {25\%};
+        \node[tsGrey, font=\fontsize{5.5pt}{6.5pt}\selectfont] at (54:0.85cm) {50\%};
+        \node[tsGrey, font=\fontsize{5.5pt}{6.5pt}\selectfont] at (54:1.275cm) {75\%};
+        % Score blob - smooth curve through 5 score points (the snowflake shape)
+        \fill[tsRed, fill opacity=0.25]
+            plot[smooth cycle, tension=0.8] coordinates {
+                (90:#1/100*\radius)
+                (18:#2/100*\radius)
+                (306:#3/100*\radius)
+                (234:#4/100*\radius)
+                (162:#5/100*\radius)
+            };
+        \draw[tsRed, line width=1.4pt]
+            plot[smooth cycle, tension=0.8] coordinates {
+                (90:#1/100*\radius)
+                (18:#2/100*\radius)
+                (306:#3/100*\radius)
+                (234:#4/100*\radius)
+                (162:#5/100*\radius)
+            };
+        % Score points
+        \foreach \angle/\score in {90/#1, 18/#2, 306/#3, 234/#4, 162/#5} {
+            \fill[tsRed] (\angle:\score/100*\radius) circle (1.8pt);
+        }
+        % Axis labels (outside the snowflake)
+        \node[tsText, font=\fontsize{7pt}{8.5pt}\selectfont\bfseries, align=center] at (90:\radius+0.55cm) {Conceptual\\Understanding};
+        \node[tsText, font=\fontsize{7pt}{8.5pt}\selectfont\bfseries, align=center] at (18:\radius+0.65cm) {Approach\\\&\ Method};
+        \node[tsText, font=\fontsize{7pt}{8.5pt}\selectfont\bfseries, align=center] at (306:\radius+0.65cm) {Step-by-Step\\Execution};
+        \node[tsText, font=\fontsize{7pt}{8.5pt}\selectfont\bfseries, align=center] at (234:\radius+0.65cm) {Numerical\\Accuracy};
+        \node[tsText, font=\fontsize{7pt}{8.5pt}\selectfont\bfseries, align=center] at (162:\radius+0.65cm) {Presentation\\\&\ Clarity};
+    \end{tikzpicture}%
+}
+
+
+% ===== Rubric table =====
+% \tsRubricTable{rows} - rows is a list of \rubricRow lines
+% Vertical alignment: all cells centered using m{} columns + arraystretch
+\newcommand{\rubricRow}[4]{%
+    #1 & #2 & \textbf{#3} & #4 \\
+    \hline
+}
+% Standard rubric table - full content width (17cm)
+\newenvironment{tsRubricTable}{%
+    \par\noindent
+    \renewcommand{\arraystretch}{1.5}%
+    \arrayrulecolor{tsLightGrey}%
+    \begin{tabular}{|m{7.0cm}|>{\centering\arraybackslash}m{2.3cm}|>{\centering\arraybackslash}m{2.3cm}|m{4.2cm}|}
+        \hline
+        \rowcolor{tsRed}
+        \cellcolor{tsRed}{\color{white}\textbf{Dimension}} &
+        \cellcolor{tsRed}{\centering\color{white}\textbf{Weight}} &
+        \cellcolor{tsRed}{\centering\color{white}\textbf{Score}} &
+        \cellcolor{tsRed}{\color{white}\textbf{Status}} \\
+        \hline
+}{%
+    \end{tabular}
+    \par
+}
+
+% Compact rubric table for side-by-side layout
+% Columns: 4.0 + 1.1 + 1.4 + 2.0 = 8.5cm of content (plus borders/padding ~0.5cm = 9cm total)
+\newenvironment{tsRubricTableCompact}{%
+    \par\noindent
+    \renewcommand{\arraystretch}{1.5}%
+    \arrayrulecolor{tsLightGrey}%
+    \setlength{\tabcolsep}{4pt}%
+    \begin{tabular}{|m{4.0cm}|>{\centering\arraybackslash}m{1.1cm}|>{\centering\arraybackslash}m{1.4cm}|m{2.0cm}|}
+        \hline
+        \rowcolor{tsRed}
+        \cellcolor{tsRed}{\fontsize{9pt}{11pt}\selectfont\color{white}\textbf{Dimension}} &
+        \cellcolor{tsRed}{\fontsize{9pt}{11pt}\selectfont\color{white}\textbf{Wt}} &
+        \cellcolor{tsRed}{\fontsize{9pt}{11pt}\selectfont\color{white}\textbf{Score}} &
+        \cellcolor{tsRed}{\fontsize{9pt}{11pt}\selectfont\color{white}\textbf{Status}} \\
+        \hline
+}{%
+    \end{tabular}
+    \par
+}
+
+% Compact rubric row - smaller font for side-by-side
+\newcommand{\rubricRowC}[4]{%
+    {\fontsize{9pt}{11pt}\selectfont #1} &
+    {\fontsize{9pt}{11pt}\selectfont #2} &
+    {\fontsize{9pt}{11pt}\selectfont \textbf{#3}} &
+    {\fontsize{9pt}{11pt}\selectfont #4} \\
+    \hline
+}
+
+% Side-by-side layout: snowflake on left (7cm), compact table on right (10cm)
+\newenvironment{tsRubricSplit}[5]{%
+    \par\noindent
+    \begin{minipage}[c]{7.0cm}
+        \centering
+        \tsSnowflake{#1}{#2}{#3}{#4}{#5}%
+    \end{minipage}%
+    \hfill%
+    \begin{minipage}[c]{10.0cm}
+        \begin{tsRubricTableCompact}
+}{%
+        \end{tsRubricTableCompact}
+    \end{minipage}
+    \par
+}
+
+% ===== Hanging-indent bullet list (Pattern Diagnosis style) =====
+\newenvironment{tspoints}{%
+    \begin{list}{\textbullet}{%
+        \setlength{\leftmargin}{1.0em}%
+        \setlength{\itemindent}{0pt}%
+        \setlength{\labelsep}{0.5em}%
+        \setlength{\labelwidth}{0.5em}%
+        \setlength{\itemsep}{4pt}%
+        \setlength{\parsep}{0pt}%
+        \setlength{\topsep}{4pt}%
+        \setlength{\listparindent}{0pt}%
+    }
+}{\end{list}}
+
+% ===== Per-question card =====
+% Usage:
+%   \begin{tsQCard}{qno}{topic}{scanQuality}{scanColor}{totalScore}
+%      \tsQFunc{...}                    % function display
+%      \tsQAnswer{your answer}{expected answer}
+%      \tsQDimRow{cu%}{am%}{ss%}{na%}{pr%}
+%      \tsQFeedback{text}
+%      \tsScanNote{text}              % optional, only if non-empty
+%   \end{tsQCard}
+
+\newcommand{\tsQFuncContent}{}
+\newcommand{\tsQAnswerYour}{}
+\newcommand{\tsQAnswerIdeal}{}
+\newcommand{\tsQDimCU}{0}
+\newcommand{\tsQDimAM}{0}
+\newcommand{\tsQDimSS}{0}
+\newcommand{\tsQDimNA}{0}
+\newcommand{\tsQDimPR}{0}
+\newcommand{\tsQFeedbackText}{}
+\newcommand{\tsQScanNoteText}{}
+\newif\iftsHasScanNote
+\tsHasScanNotefalse
+
+\newcommand{\tsQFunc}[1]{\renewcommand{\tsQFuncContent}{#1}}
+\newcommand{\tsQAnswer}[2]{%
+    \renewcommand{\tsQAnswerYour}{#1}%
+    \renewcommand{\tsQAnswerIdeal}{#2}%
+}
+\newcommand{\tsQDimRow}[5]{%
+    \renewcommand{\tsQDimCU}{#1}%
+    \renewcommand{\tsQDimAM}{#2}%
+    \renewcommand{\tsQDimSS}{#3}%
+    \renewcommand{\tsQDimNA}{#4}%
+    \renewcommand{\tsQDimPR}{#5}%
+}
+\newcommand{\tsQFeedback}[1]{\renewcommand{\tsQFeedbackText}{#1}}
+\newcommand{\tsScanNote}[1]{%
+    \renewcommand{\tsQScanNoteText}{#1}%
+    \global\tsHasScanNotetrue%
+}
+
+% Helper: a single dimension box
+% #1: full dimension name, #2: percentage (e.g. "100%"), #3: weighted contribution (e.g. "0.40")
+% #4: background color
+\newcommand{\tsDimBox}[4]{%
+    \begin{tcolorbox}[
+        colback=#4, colframe=#4, boxrule=0pt, arc=0pt,
+        left=2pt, right=2pt, top=4pt, bottom=4pt,
+        halign=center, valign=center,
+        height=1.7cm, width=3.2cm
+    ]
+        {\fontsize{7pt}{8pt}\selectfont\color{white}#1}\\[2pt]
+        {\fontsize{14pt}{16pt}\selectfont\color{white}\textbf{#2}}\\[1pt]
+        {\fontsize{7.5pt}{9pt}\selectfont\color{white} weight $\times$ score = #3}
+    \end{tcolorbox}%
+}
+
+% Determine box color from percentage
+% #1: percentage as a plain number (0-100)
+% #2: command name to define with the result color
+\newcommand{\tsDimColor}[1]{%
+    \ifnum#1<50 tsRed\else\ifnum#1<100 tsAmber\else tsGreen\fi\fi%
+}
+
+% Question card environment
+% Args: {qno}{topic}{scanQuality}{scanColor}{totalScore}{scoreOutOf}
+% Cards are NOT breakable - if a card won't fit on current page, push to next page.
+% The \needspace check ensures that if less than ~6.5cm remains on current page,
+% we break before starting the card (avoiding orphaned headers).
+\newenvironment{tsQCard}[6]{%
+    \par\needspace{6.5cm}%
+    \par\vspace{0.4cm}\noindent
+    \begin{tcolorbox}[
+        enhanced,
+        colback=white, colframe=tsBorder,
+        boxrule=0.6pt, arc=2pt,
+        leftrule=3pt, frame style={tsBorder},
+        borderline west={3pt}{0pt}{tsRed},
+        left=12pt, right=12pt, top=10pt, bottom=10pt,
+        before skip=0pt, after skip=0pt
+    ]%
+    % Header row: Q# + function on left, score on right
+    \noindent
+    \begin{minipage}[t]{0.78\linewidth}\raggedright%
+        % Render Q# and function with a fade overlay on the function tail.
+        % The Q# label stays solid; the function text fades to white over its right portion.
+        % The fade rectangle spans the full minipage width so short Qs stay mostly readable
+        % and long Qs get progressively obscured.
+        {\fontsize{11pt}{13pt}\selectfont\color{tsRed}\textbf{Q#1.}\ \ }%
+        \begin{tikzpicture}[baseline=(qfunc.base)]
+            \node[inner sep=0pt, anchor=base west, text=tsText,
+                  font=\fontsize{11pt}{13pt}\selectfont] (qfunc) at (0,0)
+                {\tsQFuncContent};
+            % Fade rectangle covers the natural text width.
+            % path fading=tsQFade goes from transparent (left) to opaque (right).
+            \fill[white, path fading=tsQFade]
+                ([xshift=-2pt]qfunc.south west) rectangle ([xshift=2pt]qfunc.north east);
+        \end{tikzpicture}%
+    \end{minipage}\hfill%
+    \begin{minipage}[t]{0.20\linewidth}\raggedleft%
+        {\fontsize{14pt}{16pt}\selectfont\color{tsRed}\textbf{#5}\fontsize{8pt}{10pt}\selectfont\color{tsGrey}\ /\ #6}%
+    \end{minipage}\par\vspace{2pt}
+    % Topic + Scan quality
+    \noindent
+    \begin{minipage}[t]{0.55\linewidth}\raggedright%
+        {\fontsize{8.5pt}{11pt}\selectfont\color{tsGrey}\textit{Topic: #2}}%
+    \end{minipage}\hfill%
+    \begin{minipage}[t]{0.42\linewidth}\raggedleft%
+        {\fontsize{8.5pt}{11pt}\selectfont\color{tsGrey}\textit{Scan Quality:}\ \color{#4}\textbf{#3}}%
+    \end{minipage}\par\vspace{6pt}
+    % Answer comparison - label row and text row use same column split
+    % so YOUR ANSWER aligns above your-answer text, EXPECTED above expected-answer text.
+    \noindent
+    \begin{tcolorbox}[
+        colback=tsBgLight, colframe=tsBgLight, boxrule=0pt, arc=0pt,
+        left=6pt, right=6pt, top=3pt, bottom=3pt,
+        before skip=0pt, after skip=0pt
+    ]
+        {\fontsize{8pt}{10pt}\selectfont\color{tsGrey}%
+        \begin{minipage}[t]{0.49\linewidth}\raggedright YOUR ANSWER\end{minipage}%
+        \hfill%
+        \begin{minipage}[t]{0.49\linewidth}\raggedright EXPECTED\end{minipage}%
+        }
+    \end{tcolorbox}%
+    \begin{tcolorbox}[
+        colback=white, colframe=tsBorder, boxrule=0.4pt, arc=0pt, top=3pt, bottom=3pt,
+        left=6pt, right=6pt, before skip=-0.6pt, after skip=0pt
+    ]
+        {\fontsize{9pt}{11pt}\selectfont
+        \begin{minipage}[t]{0.49\linewidth}\raggedright\color{tsText}\tsQAnswerYour\end{minipage}%
+        \hfill%
+        \begin{minipage}[t]{0.49\linewidth}\raggedright\color{tsGreen}\tsQAnswerIdeal\end{minipage}%
+        }
+    \end{tcolorbox}\par\vspace{6pt}
+    % Dimension boxes - 5 across, spanning full content width (5 x 3.4cm = 17cm)
+    \tsRenderDimRow
+    \par\vspace{8pt}
+    % Feedback - hanging indent: "Feedback:" label at left margin (0),
+    % body starts at 2cm, wrapped lines align at 2cm
+    \begin{list}{}{%
+        \setlength{\leftmargin}{2cm}%
+        \setlength{\itemindent}{-2cm}%
+        \setlength{\labelwidth}{0pt}%
+        \setlength{\labelsep}{0pt}%
+        \setlength{\listparindent}{0pt}%
+        \setlength{\topsep}{0pt}%
+        \setlength{\parsep}{0pt}%
+        \setlength{\itemsep}{4pt}%
+        \setlength{\rightmargin}{0pt}%
+    }
+    \item {\fontsize{9pt}{12.5pt}\selectfont\color{tsText}%
+        \makebox[2cm][l]{\textbf{Feedback:}}\tsQFeedbackText}
+    \iftsHasScanNote
+    \item {\fontsize{8.5pt}{11.5pt}\selectfont\color{tsAmber}%
+        \makebox[2cm][l]{\textbf{Scan note:}}\tsQScanNoteText}
+    \fi
+    \end{list}
+}{%
+    \end{tcolorbox}%
+    % Reset state for next card (global so it survives the env group)
+    \gdef\tsQScanNoteText{}%
+    \global\tsHasScanNotefalse%
+    \par
+}
+
+% Dimension row renderer - decides color from numerical percentages
+% Note: tsQDimCU/AM/SS/NA/PR are stored as integer percentages (0..100)
+% 5 tiles x 3.2cm = 16cm; centered within 17cm content width (0.5cm each side)
+% For two-line labels: \tsTwoLine{Word1}{Word2} renders with 2pt gap between lines.
+% All tiles use fixed-height rows so the percentage and "Weighted Score" lines
+% sit at the same vertical position across all 5 tiles in a row.
+\newcommand{\tsTwoLine}[2]{%
+    \begin{tabular}{@{}c@{}}#1\\[2pt] #2\end{tabular}%
+}
+\newcommand{\tsRenderDimRow}{%
+    \par\noindent\hspace*{-12pt}% pull left to align with card border (cancel card's internal left padding)
+    \makebox[17cm][c]{%
+        \tsDimBoxAuto{\tsTwoLine{Conceptual}{Understanding}}{\tsQDimCU}{0.40}%
+        \tsDimBoxAuto{\tsTwoLine{Approach}{\&\ Method}}{\tsQDimAM}{0.20}%
+        \tsDimBoxAuto{\tsTwoLine{Step-by-Step}{Execution}}{\tsQDimSS}{0.20}%
+        \tsDimBoxAuto{\tsTwoLine{Numerical}{Accuracy}}{\tsQDimNA}{0.10}%
+        \tsDimBoxAuto{\tsTwoLine{Presentation}{\&\ Clarity}}{\tsQDimPR}{0.10}%
+    }%
+    \par
+}
+
+% Dimension box that auto-picks color from percentage.
+% Uses three fixed-height stacked rows so values align across tiles in a row.
+% #1: name (use \tsTwoLine{}{} for two-line labels), #2: percentage int (0..100), #3: weight
+\newcommand{\tsDimBoxAuto}[3]{%
+    \edef\tsTmpPct{#2}%
+    \ifnum\tsTmpPct<50%
+        \def\tsTmpColor{tsRed}%
+    \else\ifnum\tsTmpPct<100%
+        \def\tsTmpColor{tsAmber}%
+    \else%
+        \def\tsTmpColor{tsGreen}%
+    \fi\fi%
+    \begin{tcolorbox}[
+        colback=\tsTmpColor, colframe=white, boxrule=0.6pt, arc=0pt,
+        left=2pt, right=2pt, top=3pt, bottom=3pt,
+        halign=center, valign=top,
+        before skip=0pt, after skip=0pt,
+        width=3.2cm, height=2.2cm,
+        nobeforeafter
+    ]
+        % Row 1: Label area (fixed height 22pt) - fits 1 or 2 lines at 7.5pt with 2pt gap
+        \begin{minipage}[t][22pt][t]{\linewidth}\centering%
+        {\fontsize{7.5pt}{9pt}\selectfont\color{white} #1}%
+        \end{minipage}\\[0pt]
+        % Row 2: Percentage (fixed height - top-aligned for consistent baseline)
+        \begin{minipage}[t][20pt][t]{\linewidth}\centering%
+        {\fontsize{16pt}{18pt}\selectfont\color{white}\textbf{#2\%}}%
+        \end{minipage}\\[0pt]
+        % Row 3: Weighted Score (fixed height at bottom)
+        \begin{minipage}[t][10pt][t]{\linewidth}\centering%
+        {\fontsize{6.5pt}{8pt}\selectfont\color{white} Weighted Score = #3}%
+        \end{minipage}%
+    \end{tcolorbox}%
+}
+
+% ============================================================
+%  Coaching sections: Misconceptions, SWOT Matrix, Areas of Improvement
+% ============================================================
+
+% ===== Misconceptions block (conditional - omit entire section if empty) =====
+% Usage:
+%   \begin{tsMisconceptions}
+%       \tsMisconception{Title of misconception}{Q-numbers where it appeared}{What the student is doing}{What the correct mental model is}
+%       \tsMisconception{...}{...}{...}{...}
+%   \end{tsMisconceptions}
+\newenvironment{tsMisconceptions}{%
+    \par\noindent
+    \begin{tcolorbox}[
+        enhanced,
+        colback=tsBgLight, colframe=tsAmber,
+        boxrule=0pt, arc=2pt,
+        leftrule=3pt, frame style={tsAmber},
+        borderline west={3pt}{0pt}{tsAmber},
+        left=12pt, right=12pt, top=8pt, bottom=8pt,
+        before skip=4pt, after skip=4pt
+    ]
+    \begin{list}{}{%
+        \setlength{\leftmargin}{0pt}%
+        \setlength{\rightmargin}{0pt}%
+        \setlength{\itemindent}{0pt}%
+        \setlength{\labelwidth}{0pt}%
+        \setlength{\labelsep}{0pt}%
+        \setlength{\listparindent}{0pt}%
+        \setlength{\topsep}{0pt}%
+        \setlength{\parsep}{4pt}%
+        \setlength{\itemsep}{8pt}%
+    }
+}{%
+    \end{list}
+    \end{tcolorbox}%
+    \par
+}
+
+% \tsMisconception{title}{evidence (Q-numbers)}{what student does}{correct model}
+\newcommand{\tsMisconception}[4]{%
+    \item {\fontsize{10pt}{13pt}\selectfont%
+        {\color{tsAmber}\textbf{#1}}%
+        \ {\color{tsGrey}\textit{(seen in #2)}}\par\vspace{2pt}%
+        {\color{tsText}\textbf{What's happening:}\ #3}\par\vspace{2pt}%
+        {\color{tsText}\textbf{Correct mental model:}\ #4}%
+    }%
+}
+
+% ===== SWOT Matrix (2x2 grid) =====
+% Usage:
+%   \begin{tsSWOT}
+%       {<S bullets in tspoints>}
+%       {<W bullets in tspoints>}
+%       {<O bullets in tspoints>}
+%       {<T bullets in tspoints>}
+%   \end{tsSWOT}
+% Each quadrant takes a list of \item bullets (use \tsSWOTpoint{title}{body})
+\newcommand{\tsSWOTbox}[3]{%
+    % #1: header label (e.g. "STRENGTHS")
+    % #2: header color
+    % #3: body content (list of \tsSWOTpoint items)
+    \begin{tcolorbox}[
+        enhanced,
+        colback=white, colframe=#2,
+        boxrule=0.6pt, arc=2pt,
+        left=8pt, right=8pt, top=4pt, bottom=8pt,
+        before skip=0pt, after skip=0pt,
+        nobeforeafter,
+        height=7.5cm,
+        valign=top
+    ]
+        % Inline header bar (no floating title - keeps everything inside the box bounds)
+        \par\noindent
+        \begin{tcolorbox}[
+            colback=#2, colframe=#2, boxrule=0pt, arc=2pt,
+            left=8pt, right=8pt, top=2pt, bottom=2pt,
+            halign=center, valign=center,
+            before skip=0pt, after skip=0pt,
+            width=\linewidth,
+            nobeforeafter
+        ]
+            {\fontsize{9pt}{11pt}\selectfont\color{white}\textbf{#1}}
+        \end{tcolorbox}%
+        \par\vspace{4pt}%
+        \begin{list}{$\bullet$}{%
+            \setlength{\leftmargin}{1.0em}%
+            \setlength{\itemindent}{0pt}%
+            \setlength{\labelwidth}{0.7em}%
+            \setlength{\labelsep}{0.3em}%
+            \setlength{\listparindent}{0pt}%
+            \setlength{\topsep}{0pt}%
+            \setlength{\parsep}{0pt}%
+            \setlength{\itemsep}{4pt}%
+            \fontsize{8.5pt}{11pt}\selectfont\color{tsText}%
+        }
+        #3
+        \end{list}
+    \end{tcolorbox}%
+}
+
+% Bullet inside a SWOT quadrant
+\newcommand{\tsSWOTpoint}[2]{%
+    \item \textbf{#1}\ #2%
+}
+
+% Full SWOT 2x2 grid - args are the 4 quadrant contents (S, W, O, T)
+% Usage:
+%   \tsSWOT
+%       {\tsSWOTpoint{Title}{body} \tsSWOTpoint{...}{...}}
+%       {\tsSWOTpoint{...}{...}}
+%       {\tsSWOTpoint{...}{...}}
+%       {\tsSWOTpoint{...}{...}}
+\newcommand{\tsSWOT}[4]{%
+    \par\vspace{0.3cm}\noindent
+    % Top row: Strengths (left) + Weaknesses (right)
+    \begin{minipage}[t]{8.3cm}
+        \tsSWOTbox{STRENGTHS}{tsGreen}{#1}
+    \end{minipage}%
+    \hfill%
+    \begin{minipage}[t]{8.3cm}
+        \tsSWOTbox{WEAKNESSES}{tsRed}{#2}
+    \end{minipage}
+    \par\vspace{0.4cm}\noindent
+    % Bottom row: Opportunities (left) + Threats (right)
+    \begin{minipage}[t]{8.3cm}
+        \tsSWOTbox{OPPORTUNITIES}{tsBlue}{#3}
+    \end{minipage}%
+    \hfill%
+    \begin{minipage}[t]{8.3cm}
+        \tsSWOTbox{THREATS}{tsAmber}{#4}
+    \end{minipage}
+    \par
+}
+
+% ===== Areas of Improvement (priority-ranked) =====
+% Usage:
+%   \begin{tsImprovements}
+%       \tsImprove{1}{Critical}{tsRed}{Title}{Action}{Success criterion}{By when}
+%       \tsImprove{2}{Important}{tsAmber}{...}{...}{...}{...}
+%       \tsImprove{3}{Nice to have}{tsBlue}{...}{...}{...}{...}
+%   \end{tsImprovements}
+\newenvironment{tsImprovements}{%
+    \par\vspace{0.2cm}\noindent
+    \begin{list}{}{%
+        \setlength{\leftmargin}{0pt}%
+        \setlength{\rightmargin}{0pt}%
+        \setlength{\itemindent}{0pt}%
+        \setlength{\labelwidth}{0pt}%
+        \setlength{\labelsep}{0pt}%
+        \setlength{\listparindent}{0pt}%
+        \setlength{\topsep}{0pt}%
+        \setlength{\parsep}{6pt}%
+        \setlength{\itemsep}{8pt}%
+    }
+}{%
+    \end{list}
+    \par
+}
+
+% \tsImprove{rank}{labelText}{labelColor}{title}{action}{successCriterion}{byWhen}
+% BOLD EDITORIAL DESIGN: oversized priority numeral as graphic element + color-flooded
+% left block + tracked uppercase labels. Visual hierarchy reinforces priority ranking.
+% Implementation: use a single tcolorbox with overlay + minipages positioned absolutely
+\newcommand{\tsImprove}[7]{%
+    \item \par\noindent
+    % Outer container box - holds both left color block and right content side by side
+    \begin{tcolorbox}[
+        enhanced,
+        colback=white, colframe=white, boxrule=0pt, arc=0pt,
+        left=0pt, right=0pt, top=0pt, bottom=0pt,
+        before skip=0pt, after skip=0pt,
+        nobeforeafter,
+        height=3.6cm,
+        overlay={%
+            % LEFT BLOCK: color-flooded with massive priority numeral
+            \begin{scope}[shift={(frame.north west)}]
+                \fill[#3] (0, 0) rectangle (4.5cm, -3.4cm);
+                \node[anchor=north west, text=white,
+                      font=\fontsize{7pt}{8pt}\bfseries\selectfont]
+                      at (0.30cm, -0.35cm) {P\,R\,I\,O\,R\,I\,T\,Y};
+                \node[anchor=north west, text=white,
+                      font=\fontsize{42pt}{42pt}\bfseries\selectfont]
+                      at (0.25cm, -0.7cm) {0#1};
+                \node[anchor=north west, text=white,
+                      font=\fontsize{10pt}{12pt}\selectfont]
+                      at (0.30cm, -2.7cm) {#2};
+            \end{scope}
+        }
+    ]
+        % CONTENT: right block, positioned by leaving left whitespace via \hspace
+        \noindent\hspace{5.0cm}%
+        \begin{minipage}[t]{12.0cm}
+            \par\vspace{0pt}%
+            % Title
+            {\fontsize{13pt}{16pt}\selectfont\color{tsText}\textbf{#4}}\par\vspace{8pt}%
+            % --- ACTION ROW ---
+            \noindent\begin{minipage}[t]{1.8cm}\par\vspace{1pt}%
+                {\fontsize{6.5pt}{8pt}\selectfont\color{#3}\textbf{A C T I O N}}%
+            \end{minipage}\begin{minipage}[t]{10.0cm}%
+                {\fontsize{9pt}{12pt}\selectfont\color{tsText} #5}%
+            \end{minipage}\par\vspace{6pt}%
+            % --- MEASURE ROW ---
+            \noindent\begin{minipage}[t]{1.8cm}\par\vspace{1pt}%
+                {\fontsize{6.5pt}{8pt}\selectfont\color{#3}\textbf{M E A S U R E}}%
+            \end{minipage}\begin{minipage}[t]{10.0cm}%
+                {\fontsize{9pt}{12pt}\selectfont\color{tsText} #6}%
+            \end{minipage}\par\vspace{6pt}%
+            % --- BY WHEN ROW ---
+            \noindent\begin{minipage}[t]{1.8cm}\par\vspace{1pt}%
+                {\fontsize{6.5pt}{8pt}\selectfont\color{#3}\textbf{B Y\ \ W H E N}}%
+            \end{minipage}\begin{minipage}[t]{10.0cm}%
+                {\fontsize{9pt}{12pt}\selectfont\color{tsText} #7}%
+            \end{minipage}%
+        \end{minipage}%
+    \end{tcolorbox}
+    \par\vspace{6pt}%
+    \noindent\textcolor{tsLightGrey}{\rule{17cm}{0.4pt}}%
+    \par
+}
+
+% ===== Concept Dependency Heat-Map =====
+% Visual map of which concepts each question tests, colored by performance.
+% Rows = concepts, Cols = questions (e.g. 25). Each cell colored by per-question score.
+%
+% Cell color shortcuts (use these directly inside the row macro):
+%   \tsCG  -> green cell (full mark on this concept)
+%   \tsCA  -> amber cell (partial)
+%   \tsCR  -> red cell (failed)
+%   \tsCN  -> neutral grey cell (untested by this question)
+%
+% Usage:
+%   \begin{tsConceptMap}{25}
+%       \tsConceptMapHeader{25}
+%       \tsConceptRow{Square root non-negativity}{\tsCG \tsCN \tsCG \tsCG ...}
+%       \tsConceptRow{Log argument positivity}{...}
+%   \end{tsConceptMap}
+
+% Cell content macros - colored cells. Use & as the explicit separator between cells.
+% Example row content: \tsCG &\tsCN &\tsCG &\tsCA &\tsCR
+\newcommand{\tsCG}{\cellcolor{tsGreen}\rule{0pt}{6pt}}    % green = full mark
+\newcommand{\tsCA}{\cellcolor{tsAmber}\rule{0pt}{6pt}}    % amber = partial
+\newcommand{\tsCR}{\cellcolor{tsRed}\rule{0pt}{6pt}}      % red = failed
+\newcommand{\tsCN}{\cellcolor{tsLightGrey}\rule{0pt}{6pt}} % neutral grey = untested
+
+% Header cell helper - wraps a Q-number with consistent small grey styling
+% so that all column headers (1, 2, ... 25) have the same alignment and font.
+\newcommand{\tsCH}[1]{{\fontsize{6pt}{7pt}\selectfont\color{tsGrey}#1}}
+
+% Concept map environment - sets up a fixed-width tabular
+% #1 = number of questions (e.g. 25)
+% Concept column 5cm, each Q cell 0.42cm wide -> 5 + 25*0.42 = ~15.5cm fits in 17cm
+\newenvironment{tsConceptMap}[1]{%
+    \par\vspace{0.2cm}\noindent
+    \begingroup
+    \setlength{\tabcolsep}{1.5pt}%
+    \renewcommand{\arraystretch}{1.0}%
+    \arrayrulecolor{white}%
+    \fontsize{7pt}{8pt}\selectfont\color{tsText}%
+    \noindent
+    \begin{tabular}{@{}p{5.0cm}@{\hspace{2pt}}*{#1}{>{\centering\arraybackslash}p{0.42cm}@{}}}
+}{%
+    \end{tabular}
+    \endgroup
+    \par
+}
+
+% Header row - the user passes the cell content with explicit & separators
+% (e.g. "1 &2 &3 &... &25"). Setting fontsize globally for the row via the
+% \tabular column spec ensures each cell renders consistently.
+% We need to NOT wrap the entire row content in {} because that hides the &
+% column separators. Instead, we use \multicolumn to set font per cell.
+%
+% Simplest reliable approach: set the font in the surrounding tabular's column
+% spec via >{...} prefix, and let the user's cells flow naturally.
+\newcommand{\tsConceptMapHeader}[1]{%
+    {\fontsize{6pt}{7pt}\selectfont\color{tsGrey}\textit{Concept}}
+    & #1 \tabularnewline[3pt]
+}
+
+% Concept row
+% #1 = concept name (left column)
+% #2 = sequence of \tsCG/\tsCA/\tsCR/\tsCN, separated by &
+\newcommand{\tsConceptRow}[2]{%
+    {\fontsize{7.5pt}{9pt}\selectfont\color{tsText}\textbf{#1}}
+    & #2 \tabularnewline[2pt]
+}
+
+% ============================================================
+%  Summary Box - plain-language report summary for any reader
+%  (no rubric jargon, no sub-scores - the "tell anyone in 4 lines" version)
+% ============================================================
+% Usage:
+%   \tsSummaryBox{Body text - 3-5 lines of plain-language summary}
+% Suggested content: "Kiran scored 100% on this Warm-Up assignment on Domain of
+% Functions and is promoted to the Qualifier tier. Strengths: disciplined working,
+% endpoint discipline. Focus areas: method-selection efficiency, notation
+% standardisation. Next assignment: QA-DOM3 within 1 week."
+\newcommand{\tsSummaryBox}[1]{%
+    \par\vspace{0.3cm}\noindent
+    \begin{tcolorbox}[
+        enhanced,
+        colback=tsBgLight, colframe=tsBlue,
+        boxrule=0pt, arc=2pt,
+        leftrule=3pt, frame style={tsBlue},
+        borderline west={3pt}{0pt}{tsBlue},
+        left=12pt, right=12pt, top=8pt, bottom=8pt,
+        before skip=0pt, after skip=0pt
+    ]
+        {\fontsize{8pt}{10pt}\selectfont\color{tsBlue}\textbf{S U M M A R Y}}\par\vspace{4pt}%
+        {\fontsize{10pt}{14pt}\selectfont\color{tsText} #1}%
+    \end{tcolorbox}
+    \par
+}
+
+% ============================================================
+%  Tracking Number + QR Code (for last page)
+% ============================================================
+% Usage:
+%   \tsTrackingBlock{TS-WA-DOM2-20260509-KVN-001}{https://thinkingsouls.com/track/TS-WA-DOM2-20260509-KVN-001}
+%
+% First arg: human-readable tracking ID (shown).
+% Second arg: URL the QR code encodes (NOT shown as text - only encoded into the QR).
+%
+% Layout: ID + description on the left (~14cm), QR code on the right (~2.5cm).
+\newcommand{\tsTrackingBlock}[2]{%
+    \par\vspace{0.4cm}\noindent
+    \begin{tcolorbox}[
+        enhanced,
+        colback=tsBgLight, colframe=tsBgLight,
+        boxrule=0pt, arc=2pt,
+        left=12pt, right=12pt, top=10pt, bottom=10pt,
+        before skip=0pt, after skip=0pt
+    ]
+        \noindent
+        % LEFT block: tracking ID label, value, description (~11.5cm)
+        \begin{minipage}[c]{11.5cm}
+            {\fontsize{8pt}{10pt}\selectfont\color{tsGrey}\textbf{T R A C K I N G\ \ I D}}\par\vspace{4pt}%
+            {\fontsize{10pt}{12pt}\selectfont\color{tsText}\texttt{#1}}\par\vspace{6pt}%
+            {\fontsize{8pt}{11pt}\selectfont\color{tsGrey}\textit{Scan the QR code or quote this ID when contacting ThinkingSouls about this evaluation - it identifies the exact submission, evaluation date, and version of the rubric used.}}%
+        \end{minipage}%
+        \hfill%
+        % RIGHT block: QR code (~2.5cm)
+        \begin{minipage}[c]{2.5cm}\centering
+            \qrcode[height=2.3cm, level=Q]{#2}%
+        \end{minipage}%
+    \end{tcolorbox}
+    \par
+}
+
+% ===== Scanning tips - 2-column grid =====
+% Each cell uses a hanging indent: tip number at left edge,
+% body and wrapped lines align at 0.8cm (hierarchical step from 0).
+\newenvironment{tsScanTips}{%
+    \par\vspace{0.2cm}\noindent
+    \renewcommand{\arraystretch}{1.2}%
+    \arrayrulecolor{tsLightGrey}%
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{8.0cm}|>{\raggedright\arraybackslash}p{8.0cm}|}
+        \hline
+}{%
+        \\\hline
+    \end{tabular}\par
+}
+% \tsTip{number}{title.} body... renders as:
+%   "1. Title." flush at left,
+%   body wraps with hanging indent at 0.8cm
+% Uses \hangindent which works inside table cells (no \par needed).
+\newcommand{\tsTip}[2]{%
+    \fontsize{9.5pt}{12pt}\selectfont%
+    \hangindent=0.8cm\hangafter=1%
+    \makebox[0.8cm][l]{\textbf{#1.}}#2%
+}
+
+% ===== Disclaimer =====
+\newcommand{\tsDisclaimer}{%
+    \par\vspace{0.4cm}\noindent
+    \begin{tcolorbox}[
+        colback=tsBgLight, colframe=tsAmber,
+        boxrule=0pt, arc=2pt,
+        leftrule=3pt, left=10pt, right=10pt, top=8pt, bottom=8pt
+    ]
+        {\fontsize{9pt}{12pt}\selectfont\color{tsAmber}\textbf{AI-Assisted Evaluation Disclaimer}\par\vspace{2pt}}
+        {\fontsize{8.5pt}{11.5pt}\selectfont\color{tsText}%
+        This report was generated with AI assistance. AI can make mistakes.
+        If any score, feedback, or scan-quality assessment seems off, please flag it for human review.
+        The Standard Subjective Rubric (40\% Conceptual Understanding, 20\% Approach \&\ Method,
+        20\% Step-by-Step Execution, 10\% Numerical Accuracy, 10\% Presentation \&\ Clarity) was applied
+        consistently across all questions. Final responsibility for grading decisions rests with the
+        evaluating teacher.}
+    \end{tcolorbox}
+}
+
+% ===== Signature line =====
+\newcommand{\tsSignature}{%
+    \par\vspace{0.3cm}\noindent
+    {\fontsize{9pt}{11pt}\selectfont\color{tsGrey}\textit{Evaluated by ThinkingSouls evaluation framework
+    \ \textperiodcentered\ Standard Subjective Rubric (40/20/20/10/10)
+    \ \textperiodcentered\ All five dimensions weighted to a single mark per question.}}
+    \par\vspace{0.15cm}
+    {\color{tsLightGrey}\rule{\textwidth}{0.4pt}}
+    \par\vspace{0.1cm}
+    {\fontsize{8pt}{10pt}\selectfont\color{tsGrey}Mohit Sardana \ \textperiodcentered\ Mathematics Mentor
+    \ \textperiodcentered\ ThinkingSouls Education \ \textperiodcentered\ thinkingsouls.com}
+}
+
+\endinput

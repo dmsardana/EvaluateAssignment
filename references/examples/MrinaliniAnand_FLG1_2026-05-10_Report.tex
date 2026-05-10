@@ -1,0 +1,344 @@
+% ============================================================
+%  ThinkingSouls Evaluation Report
+%  Student: Mrinalini Anand
+%  Assignment: FLG1 - QA Tier (Qualifier's Assignment)
+%  Date: 10 May 2026
+%  Compile with: xelatex (twice)
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage{ts_evalreport}
+
+% --- Override tsStudentBlock ---
+% Layout: 4 minipage columns separated by thin vertical rules.
+% Separator overhead: 3 x (6pt + 0.6pt + 6pt) ~ 1.5cm. Remaining ~15.5cm across 4 cols.
+% Label-to-value gap: 2pt (tight). All text raggedright (no justification).
+\renewcommand{\tsStudentBlock}[4]{%
+    \par\vspace{0.2cm}\noindent
+    \begin{minipage}[t]{3.5cm}
+        \raggedright
+        {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} STUDENT}\par\vspace{2pt}
+        {\fontsize{12pt}{14pt}\selectfont\color{tsText}\textbf{#1}}
+    \end{minipage}%
+    \hspace{6pt}{\color{tsLightGrey}\vrule width 0.6pt}\hspace{6pt}%
+    \begin{minipage}[t]{5.2cm}
+        \raggedright
+        {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} ASSIGNMENT}\par\vspace{2pt}
+        {\fontsize{10pt}{12.5pt}\selectfont\color{tsText}\textbf{#2}}
+    \end{minipage}%
+    \hspace{6pt}{\color{tsLightGrey}\vrule width 0.6pt}\hspace{6pt}%
+    \begin{minipage}[t]{4.8cm}
+        \raggedright
+        {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} TOPIC}\par\vspace{2pt}
+        {\fontsize{9.5pt}{12pt}\selectfont\color{tsText}\textbf{#3}}
+    \end{minipage}%
+    \hspace{6pt}{\color{tsLightGrey}\vrule width 0.6pt}\hspace{6pt}%
+    \begin{minipage}[t]{2.6cm}
+        \raggedright
+        {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} EVALUATION DATE}\par\vspace{2pt}
+        {\fontsize{10pt}{12.5pt}\selectfont\color{tsText}\textbf{#4}}
+    \end{minipage}%
+    \par\vspace{6pt}
+    {\color{tsLightGrey}\rule{\textwidth}{0.6pt}}
+    \par\vspace{0.5cm}
+}
+
+\tsSetHeader{Mathematics \ \textperiodcentered\ Differential Calculus \ \textperiodcentered\ Functions \ \textperiodcentered\ Logarithmic Inequalities}{QA}
+\tsSetTier{QA}{Qualifier's}
+\tsSetFooter{Mrinalini Anand \ \textperiodcentered\ QA \ \textperiodcentered\ FLG1 \ \textperiodcentered\ Logarithmic Functions}{Generated 10 May 2026}
+
+\begin{document}
+
+% ============================================================
+%  PAGE 1: SUMMARY
+% ============================================================
+
+\tsStudentBlock{Mrinalini Anand}{FLG1 - Logarithmic Inequalities \& Equations (QA)}{Differential Calculus / Functions / Logarithmic Functions}{10 May 2026}
+
+\tsScoreBlock{66.0\%}{6.60}{10}{Qualifier}{tsBlue}{Retake QA with targeted revision}
+
+\tsPromotionBar{tsBlue}{tsBgLight}{RETAKE:}{tsText}{Repeat FLG1-QA after targeted revision.}{AA threshold ($\geq 75\%$) not yet cleared. Gap: 9 percentage points.}
+
+\tsSummaryBox{Mrinalini scored \textbf{66.0\%} (6.60/10) on this Qualifier's Assignment (QA) on Logarithmic Inequalities - a \textbf{Qualifier band result requiring a retake after targeted revision} before promotion to the Achiever's Assignment (AA). Strong performances on substitution-based equations (Q9, Q10), double absolute value problems (Q7), and multi-layer log chains (Q1) show genuine conceptual grip where the method is clear. The primary gap is in problems where the inequality direction must be flipped on the log base - Q3 was not solved beyond domain setup, and Q5/Q6 were left incomplete. Fix the two-branch log inequality template and complete every question before re-attempting. Recommended next step: \textbf{targeted revision on Q3, Q5, Q6} then \textbf{FLG1-QA retake} within \textbf{7 days}.}
+
+\tsHone{Rubric Breakdown}
+
+% Aggregate per-dimension: weighted average across 10 questions
+% CU scores: 1,1,0.5,0.5,0.5,0.5,1,1,0.5,1 -> sum=7.5, avg=75%
+% AM scores: 1,1,0,1,0.5,0.5,1,1,1,1 -> sum=8, avg=80%
+% SS scores: 0.5,0.5,0,0.5,0,0,1,0.5,1,1 -> sum=5, avg=50%
+% NA scores: 1,0.5,0,1,0,0,1,1,0.5,1 -> sum=6, avg=60%
+% PR scores: 0.5,0.5,0.5,0.5,0,0,0.5,0.5,0.5,0.5 -> sum=4, avg=40%
+\begin{tsRubricSplit}{75}{80}{50}{60}{40}
+    \rubricRowC{Conceptual Understanding}{40\%}{75\%}{\color{tsGreen}\textbf{Strong}}
+    \rubricRowC{Approach \&\ Method}{20\%}{80\%}{\color{tsGreen}\textbf{Strong}}
+    \rubricRowC{Step-by-Step Execution}{20\%}{50\%}{\color{tsAmber}\textbf{Developing}}
+    \rubricRowC{Numerical Accuracy}{10\%}{60\%}{\color{tsBlue}\textbf{Solid}}
+    \rubricRowC{Presentation \&\ Clarity}{10\%}{40\%}{\color{tsRed}\textbf{Needs work}}
+\end{tsRubricSplit}
+
+\par\vspace{0.3cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question score formula: }}%
+{\fontsize{10pt}{12pt}\selectfont $Q = 0.40 \times \mathrm{CU} + 0.20 \times \mathrm{AM} + 0.20 \times \mathrm{SS} + 0.10 \times \mathrm{NA} + 0.10 \times \mathrm{PR}$}%
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{, where each dimension is scored 0, 0.5, or 1. Maximum 1.00 mark per question; aggregate over 10 questions.}}
+
+% ============================================================
+%  CONCEPT DEPENDENCY MAP
+% ============================================================
+\newpage
+\tsHone{Concept Dependency Map}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Which underlying concepts each question tests, colored by your performance. Green = full marks, Amber = partial, Red = failed, Grey = not tested by that question.}}
+
+\begin{tsConceptMap}{10}
+    \tsConceptMapHeader{1 &2 &3 &4 &5 &6 &7 &8 &9 &10}
+    \tsConceptRow{Log argument positivity}{\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCA &\tsCN &\tsCG &\tsCG &\tsCG}
+    \tsConceptRow{Base constraints ($b>0, b\neq1$)}{\tsCA &\tsCG &\tsCA &\tsCA &\tsCA &\tsCA &\tsCN &\tsCG &\tsCG &\tsCG}
+    \tsConceptRow{Log inequality direction (base flip)}{\tsCG &\tsCG &\tsCR &\tsCG &\tsCR &\tsCR &\tsCG &\tsCG &\tsCN &\tsCN}
+    \tsConceptRow{Absolute value case analysis}{\tsCN &\tsCA &\tsCN &\tsCN &\tsCA &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN}
+    \tsConceptRow{Substitution / change of variable}{\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCG}
+    \tsConceptRow{Nested / multi-layer log chains}{\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCA &\tsCN &\tsCA &\tsCN &\tsCN}
+    \tsConceptRow{Domain intersection \& endpoint discipline}{\tsCA &\tsCA &\tsCA &\tsCA &\tsCR &\tsCR &\tsCG &\tsCG &\tsCA &\tsCG}
+\end{tsConceptMap}
+
+% ============================================================
+%  MISCONCEPTIONS
+% ============================================================
+\tsHone{Misconceptions Identified}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Patterns where a wrong mental model produced repeated errors - not one-off slips, but systematic gaps that need targeted concept work.}}
+
+\begin{tsMisconceptions}
+    \tsMisconception%
+        {``Domain check = solving the inequality''}%
+        {Q3, Q5}%
+        {In Q3 and Q5, the student established that the argument must be positive (correct) and then presented the positivity condition as the final answer - never converting the log inequality into a direct algebraic inequality. The step $\log_{b} f(x) \geq c \;\Rightarrow\; f(x) \geq b^{c}$ (for $b>1$) or $f(x) \leq b^{c}$ (for $0<b<1$) was skipped entirely.}%
+        {Domain setup and inequality solving are two separate stages. After confirming $f(x)>0$ and $b>0, b\neq 1$, you must still convert the log inequality: determine which direction the inequality points by checking whether $b>1$ or $b<1$, then raise $b$ to both sides. Only then intersect with the domain.}
+    \tsMisconception%
+        {Rejecting valid negative intermediate values}%
+        {Q9}%
+        {After solving $(p-2)(p+1)=0$, the student rejected $p=-1$ (i.e.\ $x=1/3$) without a domain check - likely because a negative value "felt wrong" for a logarithm result. But $\log_{3}(1/3) = -1$ is perfectly valid; the base-3 log of a positive number less than 1 is negative by definition.}%
+        {A logarithm's output can be any real number - positive, negative, or zero. Only the argument and the base are restricted ($\text{argument}>0$, base $>0$, base $\neq 1$). When substitution gives two candidate values, always check domain (is $x>0$ and $x\neq 1$?) rather than rejecting based on the sign of the log value. $x=1/3$ satisfies all domain conditions and should appear in the answer.}
+\end{tsMisconceptions}
+
+% ============================================================
+%  SWOT MATRIX
+% ============================================================
+\newpage
+\tsHone{SWOT Matrix}
+
+\tsSWOT
+    {%
+        \tsSWOTpoint{Substitution fluency.}{In Q9 and Q10, the student introduced $p = \log_{3} x$ and $u = \log_{0.2} x$ without prompting and used them cleanly. This is one of the highest-value habits in log problem-solving.}
+        \tsSWOTpoint{Double absolute value handling.}{Q7's double-mod structure $||{\cdot}|-1|>2$ was peeled correctly into two cases, with the impossible case ($|{\cdot}|<-1$) immediately identified and crossed out.}
+        \tsSWOTpoint{Decreasing-base awareness.}{In Q7 and Q8 the student correctly flipped inequality directions when the log base was less than 1 - a step many students miss at QA level.}
+        \tsSWOTpoint{Insightful bounding arguments.}{In Q10, the observation that ``both square roots are always non-negative, so each must be $\leq 1$'' was the key insight, and the student found it independently. This is mathematical maturity, not just technique.}
+    }
+    {%
+        \tsSWOTpoint{Log inequality conversion - the core step.}{Q3 scored 0.25/1.00 because the actual inequality ($\log_{x^2}(\cdot) \geq 1/2$) was never solved - only the domain was established. This is the most common fatal gap at QA level.}
+        \tsSWOTpoint{Factorization sign discipline.}{In Q4, $(x-2)(x-3)>0$ was transcribed as ``$x>2$, $x>3$'' rather than ``$x<2$ or $x>3$''. Correct conclusion was reached by compensation, but this error will not be safe-guarded at QA.}
+        \tsSWOTpoint{Presentation and final-answer clarity.}{Across all 10 questions, no final answer was boxed or circled explicitly. Evaluators at QA level reward boxed answers; JEE Advanced markers look for it.}
+        \tsSWOTpoint{Incomplete answers under complexity.}{Q5 and Q6 - the hardest questions in the set - were left without a final answer. Time management or confidence at multi-layer problems needs attention.}
+    }
+    {%
+        \tsSWOTpoint{Q10-style reasoning transfers directly to QA.}{The ``bound the function'' insight in Q10 is exactly the kind of elegant non-algebraic argument that appears on JEE Advanced. Build on it.}
+        \tsSWOTpoint{Substitution habit enables equation-type QA questions.}{Q9's $p = \log_{3}x$ approach is the standard entry to all log equation questions at QA. One extra solution was missed but the method is established.}
+        \tsSWOTpoint{Absolute value fluency is a multiplier.}{Mrinalini's case-analysis on double-mod problems (Q2, Q7) is the hardest sub-skill in the chapter. At QA, this skill combines with log-inequality solving. She is ready for that combination.}
+    }
+    {%
+        \tsSWOTpoint{Q3-type errors recur at AA.}{Logarithmic inequalities with non-integer exponents ($\geq 1/2$, $\geq 2/3$) are standard at AA. Entering AA without fixing this gap means predictable 0-marks on an entire question category.}
+        \tsSWOTpoint{Incomplete answers are unrecoverable at AA.}{At QA level, partial credit on method still earns marks. AA questions are often multi-part - an incomplete Q5/Q6 attempt would score zero. Completing every question, even imperfectly, must become the rule.}
+        \tsSWOTpoint{Negative log values rejected without check.}{The Q9 error (rejecting $p=-1$) is likely to recur when quadratic substitution gives a ``surprising'' root. A quick domain check takes 10 seconds and protects the mark.}
+    }
+
+% ============================================================
+%  AREAS OF IMPROVEMENT
+% ============================================================
+\newpage
+\tsHone{Areas of Improvement}
+
+\begin{tsImprovements}
+    \tsImprove{1}{Critical}{tsRed}%
+        {Master the two-branch log inequality template}%
+        {After every domain check, write explicitly: ``Base $>1$: arg $\geq b^c$'' or ``Base $<1$: arg $\leq b^c$''. Drill 10 pure log-inequality problems (no absolute values) using this two-branch format until it is automatic. Re-attempt Q3 and Q5 of this paper before the retake.}%
+        {Attempt 5 log-inequality problems and achieve correct final answer (with both branches attempted) in all 5 - evaluated by Mohit before retake submission.}%
+        {Before FLG1-QA retake (within 7 days).}
+    \tsImprove{2}{Important}{tsAmber}%
+        {Check all substitution roots against domain before rejecting}%
+        {After any quadratic substitution (e.g.\ $p = \log_{b} x$), write the domain conditions explicitly: ``$x>0$, $x\neq 1$, so $p$ can be any real number.'' Only reject $p$ if it violates $x>0$ or $x\neq 1$ when converted back.}%
+        {In Q9, correctly identify $x = 1/3$ as valid. Apply same check in 3 new substitution-type log equations.}%
+        {Immediately - add to Q9 correction and apply in every equation problem going forward.}
+    \tsImprove{3}{Nice to have}{tsBlue}%
+        {Box the final answer on every question}%
+        {Adopt the habit: after writing the final answer set, draw a rectangle around it. This takes 2 seconds and signals to the examiner (and yourself) that the answer is complete. At AA level, an unboxed final answer often means the student did not verify their own result.}%
+        {All 10 questions in the FLG1-QA retake have boxed final answers.}%
+        {Starting from the next submission.}
+\end{tsImprovements}
+
+% ============================================================
+%  PER-QUESTION EVALUATION
+% ============================================================
+
+\newpage
+\tsHone{Per-Question Evaluation}
+
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey} Each question is worth 1 mark. The 5-dimension rubric is applied to every question and weighted to a single mark using the formula on Page 1. Each box below shows the percentage scored on that dimension (big number) with the weighted contribution to the question total below (Weighted Score = weight $\times$ score). Sub-scores per dimension: 1 (full), 0.5 (partial), 0 (none).}
+
+% --- Q1 ---
+\tsQFunc{$\log_{x}\!\bigl(\log_{9}(3^{x}-9)\bigr) < 1$}
+\tsQAnswer{$x \in (\log_{3}10,\,\infty)$}{$x \in (\log_{3}10,\,\infty)$}
+\tsQDimRow{100}{100}{50}{100}{50}
+\tsQFeedback{Correct answer. Core logic is sound: you extracted $3^{x}-9>0 \Rightarrow x>2$, established $\log_{9}(3^{x}-9)>0$ as a necessary condition, then converted the outer inequality to $3^{x}-9 < 9^{x}$ and used the substitution $p=3^{x}$ to show $p^{2}-p+9>0$ is always true. The crossed-out working near the top and the notation $x^{2}>0, x^{2}\neq1$ for the base constraint suggests you were thinking of a different base - the outer log base is plain $x$, not $x^{2}$, so the constraint is $x>0, x\neq1$. Since $\log_{3}10>2>1>0$, the final answer is unaffected, but the base-constraint step deserves to be written cleanly.}
+\begin{tsQCard}{1}{Nested log inequality with exponential argument}{Good}{tsBlue}{0.85}{1.00}
+\end{tsQCard}
+
+% --- Q2 ---
+\tsQFunc{$\log_{3}\!\!\left(\dfrac{|x^{2}-4x|+3}{x^{2}+|x-5|}\right) \geq 0$}
+\tsQAnswer{$x \in (-\infty,\,-\tfrac{2}{3}] \cup [\tfrac{1}{2},\,2]$}{$x \in (-\infty,\,-\tfrac{2}{3}] \cup [\tfrac{1}{2},\,2]$}
+\tsQDimRow{100}{100}{50}{50}{50}
+\tsQFeedback{Final answer correct. Critical points at $x=0,4$ (from $|x^{2}-4x|$) and $x=5$ (from $|x-5|$) were correctly identified. The sub-region calculations for $[0,4]$ gave $\tfrac{1}{2}\leq x\leq 2$ and $(4,5)$ and $[5,\infty)$ correctly gave no solutions. However, in the $x<0$ region you wrote ``$x \leq \tfrac{2}{3}$'' - the correct algebra gives $-3x \geq 2 \Rightarrow x \leq -\tfrac{2}{3}$, not $+\tfrac{2}{3}$. The sign error was self-corrected in the final answer (page 2 shows the correct $(-\infty,-\tfrac{2}{3}]$), suggesting you caught it, but it is still an execution slip that costs marks in an exam. Write each sub-region's algebra result explicitly before intersecting with the region interval.}
+\begin{tsQCard}{2}{Log of absolute-value rational expression - case analysis}{Good}{tsBlue}{0.80}{1.00}
+\end{tsQCard}
+
+% --- Q3 ---
+\tsQFunc{$\log_{x^{2}}\!\!\left(\dfrac{4x-5}{|x-2|}\right) \geq \dfrac{1}{2}$}
+\tsQAnswer{$x \in \bigl(\tfrac{5}{4},2\bigr) \cup (2,\infty)$ (domain only - inequality not solved)}{$x \in [\sqrt{6}-1,\,2) \cup \bigl(\tfrac{1}{2},\,2\bigr]$}
+\tsQDimRow{50}{0}{0}{0}{50}
+\tsQFeedback{The domain work is partially correct: $|x-2|\neq0 \Rightarrow x\neq2$, and $4x-5>0 \Rightarrow x>\tfrac{5}{4}$ identifies the argument positivity condition. Base conditions $x>0, x\neq\pm1$ are present. However, the answer submitted is simply the domain constraint ($x>\tfrac{5}{4}, x\neq2$) - the actual inequality $\log_{x^{2}}(\cdot)\geq\tfrac{1}{2}$ was never converted into an algebraic condition. The required step: since the base $x^{2}\in(0,1)$ when $x\in(-1,0)\cup(0,1)$ and $x^{2}>1$ when $|x|>1$, split into two cases and set $\dfrac{4x-5}{|x-2|}\geq x^{1}$ (base $>1$) or $\dfrac{4x-5}{|x-2|}\leq x$ (base $<1$), then intersect. This is the critical step you must master before the retake. See Areas of Improvement \#1.}
+\tsScanNote{Working for Q3 ends abruptly after domain setup; no continuation is visible on subsequent pages.}
+\begin{tsQCard}{3}{Log inequality with $x^{2}$ base - two-branch case analysis required}{Good}{tsBlue}{0.25}{1.00}
+\end{tsQCard}
+
+% --- Q4 ---
+\tsQFunc{$\log_{2x}\!\bigl(x^{2}-5x+6\bigr) < 1$}
+\tsQAnswer{$x \in \bigl(0,\tfrac{1}{2}\bigr) \cup (1,2) \cup (3,6)$}{$x \in \bigl(0,\tfrac{1}{2}\bigr) \cup (1,2) \cup (3,6)$}
+\tsQDimRow{50}{100}{50}{100}{50}
+\tsQFeedback{Correct final answer. Good instinct on splitting by base: $2x<1$ and $2x>1$ were handled separately, and the direction flip was applied correctly. One significant slip: $(x-2)(x-3)>0$ was written as ``$x>2$, $x>3$'' (i.e.\ $x\in(3,\infty)$ only), when the correct domain is $x<2$ or $x>3$. The full answer $(0,\tfrac{1}{2})\cup(1,2)\cup(3,6)$ appears because the base-flip case recovers the $(1,2)$ interval from the inequality step, partially compensating for the domain error. At QA level this lucky recovery will not always occur - train yourself to draw the number line before writing domain conclusions from quadratic inequalities.}
+\begin{tsQCard}{4}{Log inequality with linear-in-$x$ base}{Good}{tsBlue}{0.65}{1.00}
+\end{tsQCard}
+
+% --- Q5 ---
+\tsQFunc{$\log_{x^{2}+2x-3}\!\!\left(\dfrac{|x+4|-|x|}{x-1}\right) > 0$}
+\tsQAnswer{Incomplete - domain setup only, no final answer stated}{$x \in (-1-\sqrt{5},\,-3) \cup (\sqrt{5}-1,\,5)$}
+\tsQDimRow{50}{50}{0}{0}{0}
+\tsQFeedback{The domain constraints were correctly initiated: $(x+3)(x-1)>0 \Rightarrow x<-3$ or $x>1$, and $x^{2}+2x-3\neq1 \Rightarrow x\neq -1\pm\sqrt{5}$. Critical points for $|x+4|$ and $|x|$ at $-4$ and $0$ were identified. However, the scan shows only the beginning of the $x<-4$ region calculation, and no final answer is presented. Because the full case analysis was not completed, Execution, Numerical Accuracy, and Presentation cannot be awarded. At QA level, every question must be brought to a conclusion - an incomplete but methodologically correct attempt earns very little.}
+\tsScanNote{Page 3 shows the start of case analysis for Q5; the remaining cases and final answer are not visible in the scan.}
+\begin{tsQCard}{5}{Log inequality with absolute value numerator and quadratic base}{Acceptable}{tsAmber}{0.30}{1.00}
+\end{tsQCard}
+
+% --- Q6 ---
+\tsQFunc{$\log_{1/2}\!\Bigl(\log_{0.4}\!\bigl(\log_{0.3}(\log_{0.4}(\log_{0.2}x))\bigr)\Bigr) \geq 0$}
+\tsQAnswer{Incomplete - only outer inequality unpeeled; inner arguments illegible in scan}{$x \in \bigl((0.2)^{(0.4)^{0.3}},\;(0.2)^{(0.4)^{(0.3)(0.4)}}\bigr)$}
+\tsQDimRow{50}{50}{0}{0}{0}
+\tsQFeedback{The outer layer was correctly identified: $\log_{1/2}(\cdot)\geq0$ with base $<1$ means $0<\text{inner}\leq1$. The student then correctly set up $0<\log_{0.4}(\log_{0.3}(\cdots))\leq1$ and began peeling inward. However, the inner function arguments in the scan are illegible (written too small, possibly faded), making it impossible to verify subsequent steps. No final answer was presented. The method is on the right track - five-layer log chains are solved by peeling one layer at a time, tracking direction flips at each decreasing base. This skill needs to be completed at speed for QA.}
+\tsScanNote{Inner function arguments in Q6 are too small and faded to read clearly; evaluation of steps beyond the first layer is limited by scan quality.}
+\begin{tsQCard}{6}{Five-layer nested log inequality with alternating decreasing bases}{Poor}{tsRed}{0.30}{1.00}
+\end{tsQCard}
+
+% --- Q7 ---
+\tsQFunc{$\bigl||\log_{0.5}n+7|-1\bigr| > 2$}
+\tsQAnswer{$n \in (0,\,16) \cup (1024,\,\infty)$}{$n \in (0,\,16) \cup (1024,\,\infty)$}
+\tsQDimRow{100}{100}{100}{100}{50}
+\tsQFeedback{Excellent handling of the double absolute value structure. The outer inequality $||u|-1|>2$ was correctly split into $|u|-1>2 \Rightarrow |u|>3$ and $|u|-1<-2$ (impossible, correctly rejected with $\times$). The two log cases inside $|u|>3$ were then solved cleanly: $\log_{0.5}n+7>3 \Rightarrow \log_{0.5}n>-4 \Rightarrow n<2^{4}=16$, giving $(0,16)$; and $\log_{0.5}n+7<-3 \Rightarrow \log_{0.5}n<-10 \Rightarrow n>2^{10}=1024$, giving $(1024,\infty)$. The base-flip (decreasing base $0.5$) was applied correctly in both cases. Box the final answer next time.}
+\begin{tsQCard}{7}{Double absolute value with log - nested modulus inequality}{Good}{tsBlue}{0.95}{1.00}
+\end{tsQCard}
+
+% --- Q8 ---
+\tsQFunc{$\log_{x}(\log_{k}y) > 0$; where $0 < x,\,k < 1$}
+\tsQAnswer{$y \in (k,\,1)$}{$y \in (k,\,1)$}
+\tsQDimRow{100}{100}{50}{100}{50}
+\tsQFeedback{Correct answer with the right key moves: since $0<x<1$, $\log_{x}(\cdot)>0$ means the argument is in $(0,1)$, giving $0<\log_{k}y<1$. Then since $0<k<1$, the inequalities flip: $k^{1}<y<k^{0}=1$, i.e.\ $y\in(k,1)$. The intermediate line ``$1>y>k$'' is mathematically correct but reads slightly awkward - write it as $k<y<1$ to match standard interval form. The step connecting $\log_{k}y>0$ to ``$y\rightarrow k$, $y>0$'' on page 4 is a notational shorthand that could confuse a marker; expand it to ``$\log_{k}y>0$ with $k<1$ means $y<k^{0}=1$'' for clarity.}
+\begin{tsQCard}{8}{Abstract log inequality with parametric base $k$ - structural reasoning}{Good}{tsBlue}{0.85}{1.00}
+\end{tsQCard}
+
+% --- Q9 ---
+\tsQFunc{$\log_{3}x + \log_{x}3 = \log_{\!\sqrt{x}}\!3 + \log_{3}\!\sqrt{x} + \tfrac{1}{2}$}
+\tsQAnswer{$x \in \{9\}$ \quad (missed $x = 1/3$)}{$x \in \bigl\{\tfrac{1}{3},\,9\bigr\}$}
+\tsQDimRow{50}{100}{100}{50}{50}
+\tsQFeedback{Strong execution on the algebraic reduction. Letting $p=\log_{3}x$ and converting all terms: LHS $= p + \tfrac{1}{p}$; RHS $= \tfrac{p}{2} + \tfrac{2}{p} + \tfrac{1}{2}$. The equation reduces correctly to $p^{2}-p-2=0 \Rightarrow (p-2)(p+1)=0$. Here is the error: $p=-1$ (i.e.\ $x=\tfrac{1}{3}$) was rejected without a domain check. A log value of $-1$ is completely valid - the restriction is on the argument of a log, not on its output. Check: $x=\tfrac{1}{3}>0$, $x\neq1$ - both satisfied. $\log_{3}\tfrac{1}{3}=-1$ is defined. So $x=\tfrac{1}{3}$ must appear in the answer. See Misconceptions section for the full explanation. The full correct answer is $x\in\{\tfrac{1}{3},9\}$.}
+\begin{tsQCard}{9}{Log equation reduced to quadratic via substitution}{Good}{tsBlue}{0.70}{1.00}
+\end{tsQCard}
+
+% --- Q10 ---
+\tsQFunc{$\sqrt{\log_{0.04}x+1} + \sqrt{\log_{0.2}x+3} = 1$}
+\tsQAnswer{$x \in \{25\}$}{$x \in \{25\}$}
+\tsQDimRow{100}{100}{100}{100}{50}
+\tsQFeedback{Excellent. The substitution $u = \log_{0.2}x$ and the observation that $\log_{0.04}x = \tfrac{u}{2}$ (since $0.04 = (0.2)^{2}$) was the key insight, applied cleanly. The bounding argument - ``both square roots are non-negative and sum to 1, so each must be $\leq 1$; therefore $\sqrt{u+3}\leq1 \Rightarrow u\leq-2$'' combined with $u\geq-2$ from the domain constraint pins $u=-2$ exactly - is mathematically elegant and was found without prompting. The final computation $x = (0.2)^{-2} = 25$ is correct. Box the answer and, for clarity, state explicitly that $x=25$ satisfies both domain conditions ($\log_{0.04}25+1 = 0 \geq 0$ and $\log_{0.2}25+3 = 1 \geq 0$) to complete the verification.}
+\begin{tsQCard}{10}{Equation with two square-root log terms - bounding argument}{Good}{tsBlue}{0.95}{1.00}
+\end{tsQCard}
+
+% ============================================================
+%  CLOSING
+% ============================================================
+\tsHone{Closing Note}
+
+Mrinalini, a 66\% on FLG1-QA with these particular drops - Q3 (method gap), Q5 and Q6 (incomplete) - tells a specific story: the conceptual core is in good shape, but there is one missing procedure that cost you nearly three marks. Fix that procedure and this retake becomes an 85\%+.
+
+\par\vspace{0.2cm}
+Three things you demonstrated that matter beyond this score. First, you used substitution independently in Q9 and Q10 - this is not a taught reflex at QA level, it is mathematical instinct. Second, your absolute value case analysis in Q7 was clean and fast; most students tangle themselves in double mods. Third, Q10's bounding argument (``both roots are non-negative and sum to 1'') is the kind of non-algebraic reasoning that JEE Advanced rewards explicitly. These are not small things.
+
+\par\vspace{0.2cm}
+The one thing that stands between you and the Trailblazer band on this retake is the log-inequality template: after domain setup, you must convert $\log_{b}f(x) \geq c$ into a direct inequality. Write the two-branch format on a card and stick it to your desk until it is automatic. Then complete every question - even an imperfect attempt on Q5 and Q6 would have added marks.
+
+\par\vspace{0.2cm}
+\tsHthree{Where to go next.}
+
+\begin{tspoints}
+    \item \textbf{Retake:} FLG1-QA retake after targeted revision. Target $\geq 75\%$ to advance to Achiever's Assignment (AA). Attempt within 7 days.
+    \item \textbf{Drill before retake:} Redo Q3 and Q5 from this paper using the two-branch template. Then attempt 5 fresh log-inequality problems with non-integer exponents ($c = \tfrac{1}{3}$, $c = \tfrac{2}{3}$, $c = -\tfrac{1}{2}$) before resubmitting.
+    \item \textbf{Speed target for retake:} Aim for 6-8 minutes per question on routine log inequalities (Q1, Q2, Q4 type). The extra time saved pays for the harder Q5/Q6 type problems - which you must now attempt and bring to a conclusion even if the working is not perfect.
+\end{tspoints}
+
+% ============================================================
+%  DISCLAIMER + SIGNATURE + TRACKING
+% ============================================================
+
+\tsDisclaimer
+
+\tsSignature
+
+\tsTrackingBlock{TS-QA-FLG1-20260510-MA-001}{https://thinkingsouls.com/track/TS-QA-FLG1-20260510-MA-001}
+
+\newpage
+
+% ============================================================
+%  SCAN QUALITY APPENDIX
+% ============================================================
+
+\tsHone{Scan Quality Overview}
+
+Across the 10 questions: \textbf{\color{tsGreen}Excellent: 0} \ \textperiodcentered\ \textbf{\color{tsBlue}Good: 8} \ \textperiodcentered\ \textbf{\color{tsAmber}Acceptable: 1} \ \textperiodcentered\ \textbf{\color{tsRed}Poor: 1}
+
+\par\vspace{0.1cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Scan quality affects how reliably the work can be evaluated. Each question's scan quality is logged on its individual card. The tips below help you raise scan quality in future submissions.}}
+
+\tsHone{Scanning Tips for Future Submissions}
+
+Clear scans help your evaluator focus on the mathematics instead of decoding the page. A few small habits make a big difference:
+
+\par\vspace{0.15cm}
+\begin{tsScanTips}
+    \tsTip{1}{Keep fingers and thumbs out of frame.} Hold the page from a corner that's outside the camera view, or use a flat surface and weights (books on the corners). Thumbs in the frame block content and make pages look unprofessional.
+    &
+    \tsTip{2}{One page per image.} Don't capture two notebook pages in one shot. Each question's working should be readable without zooming. If a question spans two pages, that's fine - just take two clean shots.
+    \\\hline
+    \tsTip{3}{Even, indirect lighting.} Avoid direct sunlight or a single overhead lamp - both create shadows or glare strips. Diffuse light from a window (no direct sun) or a desk lamp aimed at the wall works best.
+    &
+    \tsTip{4}{Page flat, camera straight overhead.} A skewed page distorts the math. Use a clipboard or hardback book underneath to flatten the page, and hold the camera parallel to the page (not at an angle).
+    \\\hline
+    \tsTip{5}{Use a darker pen.} Pencil and very light blue ink fade in scans. A regular blue or black ballpoint or gel pen (0.5 mm or thicker) gives the best contrast.
+    &
+    \tsTip{6}{Number every question clearly.} Write the question number large at the start of each answer (e.g.\ \textbf{Q7.}). If you skip a question and come back to it, mark it - don't leave the evaluator hunting.
+    \\\hline
+    \tsTip{7}{Box your final answer.} A clear final-answer box at the end of each question saves the evaluator from reading the entire derivation just to find your conclusion. It also helps you confirm your own result before moving on.
+    &
+    \tsTip{8}{Use a scanner app, not raw photos.} Apps like Adobe Scan, Microsoft Lens, or CamScanner auto-correct perspective, sharpen text, and compile pages into a single PDF in question order. Always check page order before sending.
+    \\\hline
+    \tsTip{9}{Check page order before exporting.} After scanning, flip through the PDF once. Make sure pages run Q1 $\to$ Q2 $\to \ldots \to$ last, with no missing pages and no upside-down or sideways shots.
+    &
+    \tsTip{10}{Name the file clearly.} Format: \textit{BatchName\_StudentName\_AssignmentCode.pdf} (e.g.\ \textit{SPARK2027\_MrinaliniAnand\_FLG1.pdf}). Don't use generic names like ``Scan001.pdf'' - they get lost.
+\end{tsScanTips}
+
+\par\vspace{0.4cm}
+\noindent\textbf{Specific to your FLG1 submission:} Q6 scored Poor scan quality - the inner function arguments of the five-layer nested log are too small and faded to read, which prevented full evaluation of that question. For Q5, working ends mid-calculation with no final answer visible. For future submissions, write inner arguments of nested functions at a larger size and ensure all case analysis fits on the scanned page before uploading. Eight of ten pages were Good quality - a solid baseline to build from.
+
+\end{document}

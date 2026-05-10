@@ -1,0 +1,261 @@
+% ============================================================
+%  ThinkingSouls Evaluation Report - TEMPLATE
+%  Replace all [PLACEHOLDER] values with actual data
+%  Compile with: xelatex (twice for cross-references)
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage{ts_evalreport}
+
+% --- Header / footer configuration ---
+% Replace with subject - topic chain and tier code
+\tsSetHeader{[SUBJECT] \ \textperiodcentered\ [TOPIC AREA] \ \textperiodcentered\ [SUBTOPIC] \ \textperiodcentered\ [SPECIFIC TOPIC]}{[TIER]}
+\tsSetTier{[TIER]}{[TIER FULL NAME e.g. Warm-Up]}
+\tsSetFooter{[STUDENT NAME] \ \textperiodcentered\ [TIER] \ \textperiodcentered\ [ASSIGNMENT CODE] \ \textperiodcentered\ [TOPIC SLUG]}{Generated [DD MMM YYYY]}
+
+\begin{document}
+
+% ============================================================
+%  PAGE 1: SUMMARY
+% ============================================================
+
+\tsStudentBlock{[FULL NAME]}{[ASSIGNMENT CODE] - [PRACTICE/QUALIFIER/ACHIEVER] [N]}{[TOPIC NAME]}{[DD MMM YYYY]}
+
+% Score block: percent, marks, max, band, band-color, verdict
+% Band colors: tsGreen (Trailblazer), tsBlue (Qualifier), tsAmber (Developing), tsRed (Foundational Gaps)
+\tsScoreBlock{[XX.X\%]}{[XX.XX]}{[N]}{[Trailblazer / Qualifier / Developing / Foundational Gaps]}{[tsGreen / tsBlue / tsAmber / tsRed]}{[Promotion verdict text]}
+
+% Promotion bar - color matches band
+\tsPromotionBar{[tsGreen / tsBlue / tsAmber / tsRed]}{[tsBgGreen / tsBgLight]}{[PROMOTION: / RETAKE: / REVISE:]}{tsText}{[Verdict text]}{[Threshold note - e.g. "Threshold ($\geq 75\%$) cleared by X percentage points."]}
+
+% --- Summary Box (ALWAYS) ---
+% Plain-language summary that anyone (parent, student, mentor) can read without rubric jargon.
+% Label: "S U M M A R Y" only - never "Parent Summary".
+% Content: headline (score + tier outcome), 2-3 strengths, 2-3 focus areas, concrete next step.
+% Bold the key facts.
+\tsSummaryBox{[Student first name] scored \textbf{[XX\%]} ([marks]/[N]) on this [tier full name] assignment on [topic] and is \textbf{[promoted to / retained at / dropped to] the [next/current/lower] tier}. [2-3 sentence plain-language summary: strengths, focus areas, what this score signals]. Recommended next assignment: \textbf{[next code]} within [timeframe].}
+
+\tsHone{Rubric Breakdown}
+
+% Rubric split: snowflake chart on left + compact table on right
+% First 5 args to tsRubricSplit are the per-dimension AGGREGATE percentages (CU, AM, SS, NA, PR)
+\begin{tsRubricSplit}{[CU\%]}{[AM\%]}{[SS\%]}{[NA\%]}{[PR\%]}
+    \rubricRowC{Conceptual Understanding}{40\%}{[CU\%]}{[\color{<status-color>}\textbf{<status>}]}
+    \rubricRowC{Approach \&\ Method}{20\%}{[AM\%]}{[\color{<status-color>}\textbf{<status>}]}
+    \rubricRowC{Step-by-Step Execution}{20\%}{[SS\%]}{[\color{<status-color>}\textbf{<status>}]}
+    \rubricRowC{Numerical Accuracy}{10\%}{[NA\%]}{[\color{<status-color>}\textbf{<status>}]}
+    \rubricRowC{Presentation \&\ Clarity}{10\%}{[PR\%]}{[\color{<status-color>}\textbf{<status>}]}
+\end{tsRubricSplit}
+
+% Status word recommendations:
+%   90-100% -> Mastery (tsGreen)
+%   75-89%  -> Strong (tsGreen)
+%   60-74%  -> Solid (tsBlue)
+%   45-59%  -> Developing (tsAmber)
+%   < 45%   -> Needs work (tsRed)
+
+\par\vspace{0.3cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question score formula: }}%
+{\fontsize{10pt}{12pt}\selectfont $Q = 0.40 \times \mathrm{CU} + 0.20 \times \mathrm{AM} + 0.20 \times \mathrm{SS} + 0.10 \times \mathrm{NA} + 0.10 \times \mathrm{PR}$}%
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{, where each dimension is scored 0, 0.5, or 1. Maximum 1.00 mark per question; aggregate over [N] questions.}}
+
+% --- Concept Dependency Map (ALWAYS shown, AFTER Rubric Breakdown, BEFORE Misconceptions/SWOT) ---
+\tsHone{Concept Dependency Map}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Which underlying concepts each question tests, colored by your performance. Green = full, Amber = partial, Red = failed, Grey = not tested. Helps you see where concepts cluster across the assignment.}}
+
+\begin{tsConceptMap}{[N]}
+    \tsConceptMapHeader{1 &2 &3 &4 &5 &6 &7 &8 &9 &10 &11 &12 &13 &14 &15 &16 &17 &18 &19 &20 &21 &22 &23 &24 &25}
+    % Identify 5-8 distinct concepts the assignment tests.
+    % For each concept row, write N cells separated by & (one per question):
+    %   \tsCG = green (full), \tsCA = amber (partial), \tsCR = red (failed), \tsCN = grey (untested)
+    \tsConceptRow{[Concept 1 name]}{\tsCG &\tsCG &... }
+    \tsConceptRow{[Concept 2 name]}{\tsCN &\tsCG &... }
+    \tsConceptRow{[Concept 3 name]}{...}
+    % ... 5-8 concept rows total
+\end{tsConceptMap}
+
+% ============================================================
+%  COACHING ANALYSIS
+%  - Misconceptions: include ONLY if there are 2+ questions with the same conceptual error
+%  - SWOT Matrix: always include
+%  - Areas of Improvement: always include (3 priorities)
+% ============================================================
+
+% --- Misconceptions (CONDITIONAL - delete this entire block if no misconceptions identified) ---
+\tsHone{Misconceptions Identified}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Patterns where the wrong mental model has produced repeated errors. Different from one-off slips - these need targeted concept work.}}
+
+\begin{tsMisconceptions}
+    \tsMisconception%
+        {[Misconception title]}%
+        {[Q-numbers where seen, e.g. Q3, Q11, Q15]}%
+        {[What the student is doing - the wrong mental model in action]}%
+        {[The correct way to think about it]}
+    \tsMisconception%
+        {[...]}%
+        {[...]}%
+        {[...]}%
+        {[...]}
+\end{tsMisconceptions}
+% --- End Misconceptions ---
+
+% --- SWOT Matrix (ALWAYS) ---
+\tsHone{SWOT Matrix}
+
+\tsSWOT
+    % STRENGTHS (top-left, green)
+    {%
+        \tsSWOTpoint{[Strength 1 title.]}{[Specific evidence anchored to question numbers.]}
+        \tsSWOTpoint{[Strength 2 title.]}{[Specific evidence.]}
+        \tsSWOTpoint{[Strength 3 title.]}{[Specific evidence.]}
+        % up to 5
+    }
+    % WEAKNESSES (top-right, red)
+    {%
+        \tsSWOTpoint{[Weakness 1 title.]}{[Specific - what's the gap, where seen.]}
+        \tsSWOTpoint{[Weakness 2 title.]}{[...]}
+        % up to 5; even for 100% scorers, name next-tier-relevant gaps
+    }
+    % OPPORTUNITIES (bottom-left, blue)
+    {%
+        \tsSWOTpoint{[Opportunity 1 title.]}{[What becomes possible at next tier if strengths leveraged.]}
+        \tsSWOTpoint{[Opportunity 2 title.]}{[...]}
+        % up to 5
+    }
+    % THREATS (bottom-right, amber)
+    {%
+        \tsSWOTpoint{[Threat 1 title.]}{[Specific consequence if weakness not addressed before next tier.]}
+        \tsSWOTpoint{[Threat 2 title.]}{[...]}
+        % up to 5
+    }
+
+% --- Areas of Improvement (ALWAYS - 3 priorities) ---
+\tsHone{Areas of Improvement}
+
+\begin{tsImprovements}
+    \tsImprove{1}{Critical}{tsRed}%
+        {[Title - concrete action]}%
+        {[Action: what specifically to do - a drill, habit, re-do]}%
+        {[Measure: success criterion that's externally checkable]}%
+        {[By when: tied to next tier attempt or habit horizon]}
+    \tsImprove{2}{Important}{tsAmber}%
+        {[Title]}%
+        {[Action]}%
+        {[Measure]}%
+        {[By when]}
+    \tsImprove{3}{Nice to have}{tsBlue}%
+        {[Title]}%
+        {[Action]}%
+        {[Measure]}%
+        {[By when]}
+\end{tsImprovements}
+
+% ============================================================
+%  PER-QUESTION EVALUATION
+% ============================================================
+
+\tsHone{Per-Question Evaluation}
+
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey} Each question is worth 1 mark. The 5-dimension rubric is applied to every question and weighted to a single mark using the formula on Page 1. Each box below shows the percentage scored on that dimension (big number) with the weighted contribution to the question total below (Weighted Score). Sub-scores per dimension: 1 (full), 0.5 (partial), 0 (none).}
+
+% Repeat this block for each question. Below is a template for ONE question.
+
+% --- Q1 ---
+\tsQFunc{[$f(x) = ...$]}                                 % the function or question prompt in math mode
+\tsQAnswer{[$x \in ...$]}{[$x \in ...$]}                 % {your answer}{expected answer}
+\tsQDimRow{[100]}{[100]}{[100]}{[100]}{[100]}            % CU AM SS NA PR percentages (0-100)
+\tsQFeedback{[2-4 sentence feedback. Specific. Cite the student's actual working. Use $...$ for inline math.]}
+% Optional: only include if scan quality dropped below Good
+\tsScanNote{[One specific sentence on the scan issue.]}
+\begin{tsQCard}{[1]}{[Topic of this question]}{[Excellent/Good/Acceptable/Poor]}{[tsGreen/tsBlue/tsAmber/tsRed]}{[XX.XX]}{1.00}
+\end{tsQCard}
+
+% --- Q2 ---
+\tsQFunc{...}
+\tsQAnswer{...}{...}
+\tsQDimRow{...}{...}{...}{...}{...}
+\tsQFeedback{...}
+\begin{tsQCard}{2}{...}{Good}{tsBlue}{...}{1.00}
+\end{tsQCard}
+
+% ... continue for all N questions
+
+% ============================================================
+%  CLOSING
+% ============================================================
+
+\tsHone{Closing Note}
+
+[STUDENT FIRST NAME], [opening sentence reflecting on what this score signals]. [Substance: what habits this score evidences, what makes them mature for the tier.]
+
+\par\vspace{0.2cm}
+[Second paragraph: meta-observation about JEE-level habits demonstrated. (1) ... (2) ... (3) ... (4) ...]
+
+\par\vspace{0.2cm}
+\tsHthree{Where to go next.}
+
+\begin{tspoints}
+    \item \textbf{Next assignment:} [Specific next assignment - QA on [topic], or AA, or repeat WA].
+    \item \textbf{Adjacent topic to start now:} [The natural next topic to begin]. [Why it complements the current one.]
+    \item \textbf{Speed target for [next tier]:} [Time-per-question target for the routine ones, with full method shown].
+\end{tspoints}
+
+% ============================================================
+%  DISCLAIMER + SIGNATURE + TRACKING (closing page)
+% ============================================================
+
+\tsDisclaimer
+
+\tsSignature
+
+% --- Tracking ID + QR Code (ALWAYS) ---
+% Tracking ID format: TS-{tier}-{assignment}-{YYYYMMDD}-{studentInitials}-{seqNum}
+% QR encodes a placeholder URL for the future tracking dashboard.
+\tsTrackingBlock{TS-[TIER]-[CODE]-[YYYYMMDD]-[INITIALS]-001}
+
+\newpage
+
+% ============================================================
+%  SCAN QUALITY APPENDIX (separate page)
+% ============================================================
+
+\tsHone{Scan Quality Overview}
+
+Across the [N] questions: \textbf{\color{tsGreen}Excellent: [E]} \ \textperiodcentered\ \textbf{\color{tsBlue}Good: [G]} \ \textperiodcentered\ \textbf{\color{tsAmber}Acceptable: [A]} \ \textperiodcentered\ \textbf{\color{tsRed}Poor: [P]}
+
+\par\vspace{0.1cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Scan quality affects how reliably the work can be evaluated. Each question's scan quality is logged on its individual card. The tips below help you raise scan quality in future submissions.}}
+
+\tsHone{Scanning Tips for Future Submissions}
+
+Clear scans help your evaluator focus on the mathematics instead of decoding the page. A few small habits make a big difference:
+
+\par\vspace{0.15cm}
+\begin{tsScanTips}
+    \tsTip{1}{Keep fingers and thumbs out of frame.} Hold the page from a corner that's outside the camera view, or use a flat surface and weights (books on the corners). Thumbs in the frame block content and make pages look unprofessional.
+    &
+    \tsTip{2}{One page per image.} Don't capture two notebook pages in one shot. Each question's working should be readable without zooming. If a question spans two pages, that's fine - just take two clean shots.
+    \\\hline
+    \tsTip{3}{Even, indirect lighting.} Avoid direct sunlight or a single overhead lamp - both create shadows or glare strips. Diffuse light from a window (no direct sun) or a desk lamp aimed at the wall works best.
+    &
+    \tsTip{4}{Page flat, camera straight overhead.} A skewed page distorts the math. Use a clipboard or hardback book underneath to flatten the page, and hold the camera parallel to the page (not at an angle).
+    \\\hline
+    \tsTip{5}{Use a darker pen.} Pencil and very light blue ink fade in scans. A regular blue or black ballpoint or gel pen (0.5 mm or thicker) gives the best contrast.
+    &
+    \tsTip{6}{Number every question clearly.} Write the question number large at the start of each answer (e.g.\ \textbf{Q7.}). If you skip a question and come back to it, mark it - don't leave the evaluator hunting.
+    \\\hline
+    \tsTip{7}{Box your final answer.} You already do this well - keep it up. A clear final-answer box at the end of each question saves the evaluator from reading the entire derivation just to find your conclusion.
+    &
+    \tsTip{8}{Use a scanner app, not raw photos.} Apps like Adobe Scan, Microsoft Lens, or CamScanner auto-correct perspective, sharpen text, and compile pages into a single PDF in question order. Always check page order before sending.
+    \\\hline
+    \tsTip{9}{Check page order before exporting.} After scanning, flip through the PDF once. Make sure pages run Q1 $\to$ Q2 $\to \ldots \to$ last, with no missing pages and no upside-down or sideways shots.
+    &
+    \tsTip{10}{Name the file clearly.} Format: \textit{BatchName\_StudentName\_AssignmentCode.pdf} (e.g.\ \textit{[BATCH]\_[STUDENT]\_[CODE].pdf}). Don't use generic names like ``Scan001.pdf'' - they get lost.
+\end{tsScanTips}
+
+% Optional: specific note for THIS student's scan quality issues
+\par\vspace{0.4cm}
+\noindent\textbf{Specific to your [ASSIGNMENT CODE] submission:} [If you observed specific scan issues, name them here. Specify which questions had which issues, in one or two sentences. Frame constructively - "tightening these habits will make every future submission feel professional."]
+
+\end{document}

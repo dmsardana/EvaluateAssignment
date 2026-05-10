@@ -1,0 +1,400 @@
+% ============================================================
+%  Kiran Vinu Niar - DOM2 WA Evaluation Report
+%  Compile with: xelatex KiranVinuNiar_WA_2026-05-09_Report.tex
+% ============================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage{ts_evalreport}
+
+% --- Header / footer configuration ---
+\tsSetHeader{Mathematics \ \textperiodcentered\ Differential Calculus \ \textperiodcentered\ Functions \ \textperiodcentered\ Domain}{WA}
+\tsSetTier{WA}{Warm-Up}
+\tsSetFooter{Kiran Vinu Niar \ \textperiodcentered\ WA \ \textperiodcentered\ DOM2 \ \textperiodcentered\ Differential Calculus / Functions / Domain}{Generated 09 May 2026}
+
+\begin{document}
+
+% ============================================================
+%  PAGE 1: SUMMARY
+% ============================================================
+
+\tsStudentBlock{Kiran Vinu Niar}{DOM2 - Practice Assignment 1}{Domain of Functions}{09 May 2026}
+
+\tsScoreBlock{100.0\%}{25.00}{25}{Trailblazer}{tsGreen}{Qualifies for Qualifier's Assignment (QA)}
+
+\tsPromotionBar{tsGreen}{tsBgGreen}{PROMOTION:}{tsText}{Promoted to Qualifier's Assignment (QA).}{Threshold ($\geq 75\%$) cleared by 25 percentage points.}
+
+\tsSummaryBox{Kiran scored \textbf{100\%} (25/25) on this Warm-Up assignment on Domain of Functions and is \textbf{promoted to the Qualifier (QA) tier}. The working shows disciplined constraint extraction, clean endpoint handling, and confident composite-function decomposition - habits that matter at JEE Advanced level. Focus areas for the next stage: tighter method-selection (some Qs took longer than needed) and union-form notation as the default. Recommended next assignment: \textbf{QA-DOM3} within one week.}
+
+\tsHone{Rubric Breakdown}
+
+\begin{tsRubricSplit}{100}{100}{100}{100}{100}
+    \rubricRowC{Conceptual Understanding}{40\%}{100.0\%}{\color{tsGreen}\textbf{Mastery}}
+    \rubricRowC{Approach \&\ Method}{20\%}{100.0\%}{\color{tsGreen}\textbf{Mastery}}
+    \rubricRowC{Step-by-Step Execution}{20\%}{100.0\%}{\color{tsGreen}\textbf{Mastery}}
+    \rubricRowC{Numerical Accuracy}{10\%}{100.0\%}{\color{tsGreen}\textbf{Mastery}}
+    \rubricRowC{Presentation \&\ Clarity}{10\%}{100.0\%}{\color{tsGreen}\textbf{Mastery}}
+\end{tsRubricSplit}
+
+\par\vspace{0.3cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question score formula: }}%
+{\fontsize{10pt}{12pt}\selectfont $Q = 0.40 \times \mathrm{CU} + 0.20 \times \mathrm{AM} + 0.20 \times \mathrm{SS} + 0.10 \times \mathrm{NA} + 0.10 \times \mathrm{PR}$}%
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{, where each dimension is scored 0, 0.5, or 1. Maximum 1.00 mark per question; aggregate over 25 questions.}}
+
+% ============================================================
+%  CONCEPT DEPENDENCY MAP - starts on a fresh page (always page 2)
+% ============================================================
+\newpage
+
+\tsHone{Concept Dependency Map}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Which underlying concepts each question tests, colored by your performance. Green = full, Amber = partial, Red = failed, Grey = not tested. Helps you see where concepts cluster across the assignment.}}
+
+\begin{tsConceptMap}{25}
+    \tsConceptMapHeader{\tsCH{1} &\tsCH{2} &\tsCH{3} &\tsCH{4} &\tsCH{5} &\tsCH{6} &\tsCH{7} &\tsCH{8} &\tsCH{9} &\tsCH{10} &\tsCH{11} &\tsCH{12} &\tsCH{13} &\tsCH{14} &\tsCH{15} &\tsCH{16} &\tsCH{17} &\tsCH{18} &\tsCH{19} &\tsCH{20} &\tsCH{21} &\tsCH{22} &\tsCH{23} &\tsCH{24} &\tsCH{25}}
+    \tsConceptRow{Constraint extraction (R$_1 \cap$ R$_2 \cdots$)}{\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG}
+    \tsConceptRow{Square root non-negativity}{\tsCG &\tsCN &\tsCG &\tsCG &\tsCN &\tsCN &\tsCG &\tsCG &\tsCN &\tsCN &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCG &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN}
+    \tsConceptRow{Log argument positivity}{\tsCG &\tsCG &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCG &\tsCG}
+    \tsConceptRow{Absolute value handling}{\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCG &\tsCG &\tsCN &\tsCN &\tsCG &\tsCG &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCG}
+    \tsConceptRow{Denominator non-zero}{\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCG &\tsCN &\tsCG &\tsCG &\tsCN &\tsCG &\tsCN &\tsCN &\tsCG &\tsCG &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN}
+    \tsConceptRow{Inverse trig domain}{\tsCN &\tsCG &\tsCN &\tsCG &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN}
+    \tsConceptRow{GIF / fractional part}{\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCG &\tsCN}
+    \tsConceptRow{Composition / nested layers}{\tsCG &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCN &\tsCG &\tsCN}
+\end{tsConceptMap}
+
+% ============================================================
+%  SWOT MATRIX - tries to fit on the same page as Concept Map.
+%  needspace forces a page break if there isn't ~16cm of vertical space remaining.
+% ============================================================
+\needspace{14cm}
+
+\tsHone{SWOT Matrix}
+
+\tsSWOT
+    % STRENGTHS (top-left)
+    {%
+        \tsSWOTpoint{Disciplined constraint extraction.}{$R_1, R_2, R_3 \ldots$ structure used consistently from Q1 to Q25, with intersections written explicitly. The single most important habit at WA level - locked in.}
+        \tsSWOTpoint{Bracket discipline at endpoints.}{Open vs closed brackets handled correctly throughout - Q8, Q9, Q11, Q15 all have endpoint traps you navigated cleanly.}
+        \tsSWOTpoint{Visual reasoning when useful.}{The graph of $x^2 - 5|x| + 6$ in Q7 and the monotonicity argument in Q2 show you reach for the right tool, not just the algebraic one.}
+        \tsSWOTpoint{Composite-function decomposition.}{The four-layer log in Q2 was unwrapped in the right order with every constraint tracked. The hardest question in the set, handled cleanly.}
+    }
+    % WEAKNESSES (top-right) - even at 100%, identify the soft spots
+    {%
+        \tsSWOTpoint{Method-selection efficiency.}{Q21 was solved by case analysis - correct but longer than $x = [x] + \{x\}$ approach. At QA level, choosing the shorter route saves time you'll need.}
+        \tsSWOTpoint{Final-form notation.}{Q24 written as $(0,4) - \{1,2,3\}$ is correct but $(0,1) \cup (1,2) \cup (2,3) \cup (3,4)$ reads faster - the JEE Advanced standard.}
+        \tsSWOTpoint{Endpoint justification not always explicit.}{When brackets are open at unusual points (Q24 at $x = 0$), the reason often isn't stated. Costs nothing to add - protects under examiner scrutiny.}
+    }
+    % OPPORTUNITIES (bottom-left)
+    {%
+        \tsSWOTpoint{Ready for graphical reasoning at scale.}{The visual instinct shown in Q7 will be central at QA where domain problems involve composite functions whose graphs aren't standard. Build the habit of sketching first, algebra second.}
+        \tsSWOTpoint{Speed compression.}{All four-layer logs and absolute-value problems were solved correctly but unhurriedly. With method-selection sharpening, target sub-4-minute completion for routine domain problems at QA level.}
+        \tsSWOTpoint{Bridge to range and continuity.}{Domain mastery is half the toolkit. Range and continuity build directly on it. Starting them now compounds the WA work into a stronger QA foundation.}
+    }
+    % THREATS (bottom-right)
+    {%
+        \tsSWOTpoint{JEE Advanced has different bracket-discipline stakes.}{At JEE Advanced level, a single wrong bracket can flip a 4-mark question to 0 (no partial credit on objective papers). What's a habit at WA must become reflexive at AA.}
+        \tsSWOTpoint{Method choice becomes time-critical.}{QA timing is tighter. Picking the longer method on 4 questions out of 25 = 16 lost minutes - enough to leave an entire question unattempted.}
+        \tsSWOTpoint{Notation lapses cost in mocks.}{In JEE Main objective format, an answer in a non-standard form may not match any option. Train union-form output now to avoid late-stage re-translation.}
+    }
+
+% ============================================================
+%  AREAS OF IMPROVEMENT - starts on a fresh new page
+% ============================================================
+\newpage
+
+\tsHone{Areas of Improvement}
+
+\begin{tsImprovements}
+    \tsImprove{1}{Critical}{tsRed}%
+        {Method-selection drill}%
+        {Solve 10 mixed-domain problems where the goal is not to get the answer but to identify the optimal method in under 30 seconds before starting. Use the $x = [x] + \{x\}$ decomposition pattern explicitly.}%
+        {On 8 of 10 problems, the chosen method is the shortest valid one. Tracked by you against a model solution.}%
+        {Before starting QA-DOM3 (target: within 1 week).}
+    \tsImprove{2}{Important}{tsAmber}%
+        {Notation standardisation}%
+        {Re-write the final answers of Q21, Q24, Q9 from this WA in pure union-of-intervals form. Then re-do those three problems from scratch and write the final form first.}%
+        {All future answers default to union form; set-builder used only when no clean union exists.}%
+        {Within 3 days, before next sitting.}
+    \tsImprove{3}{Nice to have}{tsBlue}%
+        {Endpoint-reasoning shorthand}%
+        {Develop a personal one-line shorthand for endpoint justification (e.g. ``$x = 0$ excl.\ ($\ln$)'', ``$x = 1$ excl.\ (denom.)''). Apply consistently going forward.}%
+        {On QA-DOM3, every open bracket has a one-phrase reason annotated.}%
+        {Ongoing - habit-building, not a one-time fix.}
+\end{tsImprovements}
+
+% ============================================================
+%  PER-QUESTION EVALUATION - starts on a fresh new page
+% ============================================================
+\newpage
+
+\tsHone{Per-Question Evaluation}
+
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey} Each question is worth 1 mark. The 5-dimension rubric is applied to every question and weighted to a single mark using the formula on Page 1. Each box below shows the percentage scored on that dimension (big number) with the weighted contribution to the question total below (weight $\times$ score). Sub-scores per dimension: 1 (full), 0.5 (partial), 0 (none).}
+
+% --- Q1 ---
+\tsQFunc{$f(x) = \sqrt{\log_{16}(x^2)}$}
+\tsQAnswer{$x \in (-\infty, -1] \cup [1, \infty)$}{$x \in (-\infty, -1] \cup [1, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You set up the two conditions cleanly: $x^2 > 0$ for the log, and $\log_{16}(x^2) \geq 0$ for the square root, then resolved $x^2 \geq 1$ via $(x+1)(x-1) \geq 0$. Number-line verification was a nice touch.}
+\begin{tsQCard}{1}{Square root + Log on $x^2$}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q2 ---
+\tsQFunc{$f(x) = \log_2 \!\left( \log_3 \!\left( \log_4 \!\left( \log_{4/\pi}\!\left( (\arctan x)^{-1} \right) \right) \right) \right)$}
+\tsQAnswer{$x \in (0, \tan((\pi/4)^4))$}{$x \in (0, \tan((\pi/4)^4))$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Excellent. You unwrapped four nested logs in the right order (innermost outward), tracked the base $4/\pi > 1$ implication carefully, and used the monotonicity of arctan and tan to translate each constraint back to $x$. The note that $(\pi/4)^4 < \pi/4$ (so $\tan((\pi/4)^4) < 1$) shows real visual command of the function. This is the showpiece question of the set and you handled it cleanly.}
+\begin{tsQCard}{2}{Nested logs with reciprocal of arctan}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q3 ---
+\tsQFunc{$f(x) = {}^{16-x}C_{2x-1} + {}^{20-3x}P_{4x-5}$}
+\tsQAnswer{$x \in \{2, 3\}$}{$x \in \{2, 3\}$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You enumerated all seven conditions (integrality, $n \geq r$, $n \geq 0$, $r \geq 0$ for both ${}^nC_r$ and ${}^nP_r$) and intersected them to land on the discrete set $\{2, 3\}$. This is exactly the discipline this question tests.}
+\tsScanNote{Page slightly skewed; lower portion partly cropped at fold.}
+\begin{tsQCard}{3}{Combination + Permutation domain}{Acceptable}{tsAmber}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q4 ---
+\tsQFunc{$f(x) = \sin^{-1}(2 - 4x^2)$}
+\tsQAnswer{$x \in [-\sqrt{3}/2, -1/2] \cup [1/2, \sqrt{3}/2]$}{$x \in [-\sqrt{3}/2, -1/2] \cup [1/2, \sqrt{3}/2]$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You split $-1 \leq 2 - 4x^2 \leq 1$ into two inequalities and solved each by factoring as a difference of squares. The number-line intersection at the end was clean.}
+\begin{tsQCard}{4}{Inverse sine with quadratic argument}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q5 ---
+\tsQFunc{$f(x) = \log_{|x - 1/2|} |x^2 - x - 2|$}
+\tsQAnswer{$x \in \mathbb{R} - \{-1, -1/2, 1/2, 3/2, 2\}$}{$x \in \mathbb{R} - \{-1, -1/2, 1/2, 3/2, 2\}$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. The three constraints - base positive, base $\neq 1$, argument positive - were each translated through the absolute values precisely. Catching that $|x - 1/2| = 1$ gives two excluded points ($x = -1/2$ and $x = 3/2$) is the exact place students lose marks on this question.}
+\begin{tsQCard}{5}{Variable base log with absolute values}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q6 ---
+\tsQFunc{$f(x) = \arccos(2x^2 - 3)$}
+\tsQAnswer{$x \in [-\sqrt{2}, -1] \cup [1, \sqrt{2}]$}{$x \in [-\sqrt{2}, -1] \cup [1, \sqrt{2}]$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Same template as Q4 with arccos. You handled the symmetric intersection cleanly on the number line.}
+\begin{tsQCard}{6}{Inverse cosine with quadratic argument}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q7 ---
+\tsQFunc{$f(x) = \sqrt{x^2 - 5|x| + 6} + \sqrt{8 + 2|x| - x^2}$}
+\tsQAnswer{$x \in [-4, -3] \cup [-2, 2] \cup [3, 4]$}{$x \in [-4, -3] \cup [-2, 2] \cup [3, 4]$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. The graphical approach for $x^2 - 5|x| + 6$ (sketching the V-shaped even-symmetric parabola) was the right move and made the case analysis almost automatic. Excellent visual reasoning. Developmental note: try the same problem with substitution $t = |x|$ as a second method to compare speed.}
+\tsScanNote{Thumb visible at top-left corner; sketch of parabola partly clipped.}
+\begin{tsQCard}{7}{Two square roots with absolute value}{Acceptable}{tsAmber}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q8 ---
+\tsQFunc{$f(x) = \sqrt{(1 - |x|) / (2 - |x|)}$}
+\tsQAnswer{$x \in (-\infty, -2) \cup [-1, 1] \cup (2, \infty)$}{$x \in (-\infty, -2) \cup [-1, 1] \cup (2, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Sign analysis of $(|x| - 1)/(|x| - 2)$ on the $t = |x| \geq 0$ axis was clean, and the open/closed bracket discipline at $x = \pm 2$ (excluded - denominator) and $x = \pm 1$ (included - numerator zero) is exactly right.}
+\begin{tsQCard}{8}{Square root of rational with absolute values}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q9 ---
+\tsQFunc{$f(x) = 1 / \sqrt{[x]^2 - [x] - 6}$}
+\tsQAnswer{$x \in (-\infty, -2) \cup [4, \infty)$}{$x \in (-\infty, -2) \cup [4, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Substituting $y = [x]$, factoring $(y - 3)(y + 2) > 0$, and then translating $[x] \leq -3 \to x < -2$ and $[x] \geq 4 \to x \geq 4$ is the textbook move - and the bracket discipline (open at $-2$, closed at $4$) is exactly right. Many students fumble the $[x] \leftrightarrow x$ translation; you didn't.}
+\begin{tsQCard}{9}{Greatest integer function in a quadratic}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q10 ---
+\tsQFunc{$f(x) = \sqrt[3]{x / (1 - |x|)}$}
+\tsQAnswer{$x \in \mathbb{R} - \{-1, 1\}$}{$x \in \mathbb{R} - \{-1, 1\}$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You correctly identified that a cube root has no sign restriction on its radicand - only the denominator condition $1 - |x| \neq 0$ matters. Many students reflexively apply the square-root rule here; you didn't.}
+\begin{tsQCard}{10}{Cube root - no sign restriction}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q11 ---
+\tsQFunc{$f(x) = \sqrt{x / (1 - |x|)}$}
+\tsQAnswer{$x \in (-\infty, -1) \cup [0, 1)$}{$x \in (-\infty, -1) \cup [0, 1)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Splitting $x \geq 0$ and $x < 0$ to resolve $|x|$ was the right call, and you tracked the bracket convention at $x = 0$ (included, numerator zero) and $x = \pm 1$ (excluded, denominator zero) carefully. Side-by-side with Q10 this question really tests whether you internalised the cube-root vs square-root distinction - and you did.}
+\begin{tsQCard}{11}{Square root - sign analysis with $|x|$}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q12 ---
+\tsQFunc{$f(x) = \sqrt{2^x - 3^3}$}
+\tsQAnswer{$x \in [3 \log_2 3, \infty)$}{$x \in [3 \log_2 3, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. $2^x \geq 27 \to x \geq \log_2 27 = 3 \log_2 3$, taking $\ln$ of both sides cleanly. Both equivalent forms ($3 \ln 3 / \ln 2$ and $3 \log_2 3$) shown.}
+\begin{tsQCard}{12}{Exponential under square root}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q13 ---
+\tsQFunc{$f(x) = \sqrt{\ln((3x - x^2)/(x - 1))}$}
+\tsQAnswer{$x \in (-\infty, 1 - \sqrt{2}] \cup (1, 1 + \sqrt{2}]$}{$x \in (-\infty, 1 - \sqrt{2}] \cup (1, 1 + \sqrt{2}]$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. The right move was to fold $\ln(\cdot) \geq 0$ directly into $(3x - x^2)/(x - 1) \geq 1$, rearrange to $(x^2 - 2x - 1)/(x - 1) \leq 0$, and factor the numerator with the quadratic formula giving $1 \pm \sqrt{2}$. Sign analysis on three intervals was clean.}
+\begin{tsQCard}{13}{Square root of log of rational}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q14 ---
+\tsQFunc{$f(x) = \log_{(x+3)}(x^2 - 1)$}
+\tsQAnswer{$x \in (-3, -2) \cup (-2, -1) \cup (1, \infty)$}{$x \in (-3, -2) \cup (-2, -1) \cup (1, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. All three conditions (base $> 0$, base $\neq 1$, argument $> 0$) tracked, and you remembered to puncture $x = -2$ from the result.}
+\begin{tsQCard}{14}{Log with linear base, quadratic argument}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q15 ---
+\tsQFunc{$f(x) = \dfrac{\log_{2x} 3}{\cos^{-1}(2x - 1)}$}
+\tsQAnswer{$x \in (0, 1/2) \cup (1/2, 1)$}{$x \in (0, 1/2) \cup (1/2, 1)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You caught all four constraints: $2x > 0$, $2x \neq 1$, $-1 \leq 2x - 1 \leq 1$, and $\cos^{-1}(2x - 1) \neq 0$ (i.e. $2x - 1 \neq 1$). The denominator-zero exclusion at $x = 1$ is the trap - you avoided it.}
+\begin{tsQCard}{15}{Log over inverse cosine}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q16 ---
+\tsQFunc{$f(x) = \sqrt{3 + x} + \sqrt{x - 3}$}
+\tsQAnswer{$x \in [3, \infty)$}{$x \in [3, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Tightest constraint wins.}
+\begin{tsQCard}{16}{Sum of two square roots}{Excellent}{tsGreen}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q17 ---
+\tsQFunc{$f(x) = \arccos(\sin x^2)$}
+\tsQAnswer{$x \in \mathbb{R}$}{$x \in \mathbb{R}$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. $\sin x^2$ is bounded in $[-1, 1]$ for every real $x$, so arccos is always defined. Domain is $\mathbb{R}$.}
+\begin{tsQCard}{17}{Composition - inverse cos of sin}{Excellent}{tsGreen}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q18 ---
+\tsQFunc{$f(x) = \tan^{-1}(1 - x^2)$}
+\tsQAnswer{$x \in \mathbb{R}$}{$x \in \mathbb{R}$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. $\tan^{-1}$ has domain $\mathbb{R}$.}
+\begin{tsQCard}{18}{Inverse tan - all reals}{Excellent}{tsGreen}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q19 ---
+\tsQFunc{$f(x) = \arctan(\log_2 x)$}
+\tsQAnswer{$x \in (0, \infty)$}{$x \in (0, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Only constraint is $\log_2 x$ defined $\to x > 0$.}
+\begin{tsQCard}{19}{Inverse tan of log}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q20 ---
+\tsQFunc{$f(x) = \sqrt{\operatorname{arcsec}((1 - |x|)/2)}$}
+\tsQAnswer{$x \in (-\infty, -3] \cup [3, \infty)$}{$x \in (-\infty, -3] \cup [3, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You used the arcsec domain $|y| \geq 1$, identified that $1 - |x| \leq -2$ forces $|x| \geq 3$, and dismissed the impossible branch $1 - |x| \geq 2$ (which gives $|x| \leq -1$). Clean handling of a question many students get wrong because they forget arcsec output is always $\geq 0$ (so the sqrt outer condition is automatic).}
+\begin{tsQCard}{20}{arcsec inside a square root}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q21 ---
+\tsQFunc{$f(x) = \sin^{-1}(x + [x])$}
+\tsQAnswer{$x \in [0, 1)$}{$x \in [0, 1)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Case analysis on integer intervals was the right approach, and you ruled out $x \in [-1, 0)$, $x \geq 1$, and $x \leq -1$ with care. Sharper alternative for next time: write $x = [x] + \{x\}$ where $\{x\} \in [0, 1)$. Then $x + [x] = 2[x] + \{x\}$, and $-1 \leq 2[x] + \{x\} \leq 1$ forces $[x] = 0$ (the only integer that keeps the expression in range), giving $x \in [0, 1)$ in one step. Same answer, fewer cases.}
+\tsScanNote{Cramped layout near page edge; case-headers ran into margin.}
+\begin{tsQCard}{21}{Inverse sine with greatest integer}{Acceptable}{tsAmber}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q22 ---
+\tsQFunc{$f(x) = \log_{10}(\log_{10}(1 + x^2))$}
+\tsQAnswer{$x \in \mathbb{R} - \{0\}$}{$x \in \mathbb{R} - \{0\}$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Inner log defined always ($1 + x^2 > 0$); outer log demands $1 + x^2 > 1$.}
+\begin{tsQCard}{22}{Nested log with quadratic}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q23 ---
+\tsQFunc{$f(x) = \dfrac{1}{[x]} + e^{\sin x} + \dfrac{1}{\sqrt{x + 1}}$}
+\tsQAnswer{$x \in (-1, 0) \cup [1, \infty)$}{$x \in (-1, 0) \cup [1, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. Three conditions, each handled cleanly: $e^{\sin x}$ is global, $[x] \neq 0$ punctures $[0, 1)$, and $1/\sqrt{x+1}$ demands $x > -1$. Intersection done right.}
+\begin{tsQCard}{23}{Sum of three with mixed restrictions}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q24 ---
+\tsQFunc{$f(x) = e^x + \sin^{-1}(x/2 - 1) + \ln \sqrt{x - [x]}$}
+\tsQAnswer{$x \in (0, 4) - \{1, 2, 3\}$}{$x \in (0, 1) \cup (1, 2) \cup (2, 3) \cup (3, 4)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. You spotted that $\ln \sqrt{x - [x]}$ demands $x - [x] > 0$, i.e.\ $x$ is not an integer - and the $\sin^{-1}$ leg gives the $[0, 4]$ window. Endpoint discipline: the open brackets at $0$ and $4$ come from the $\ln$ (which blows up when $\{x\} = 0$) - you got this right but it's worth stating the endpoint reason explicitly. The notation $(0, 4) - \{1, 2, 3\}$ is correct; the equivalent union form $(0,1) \cup (1,2) \cup (2,3) \cup (3,4)$ makes the answer easier to read at a glance.}
+\begin{tsQCard}{24}{Sum with inverse sine and fractional part}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% --- Q25 ---
+\tsQFunc{$f(x) = \log_e |\ln x|$}
+\tsQAnswer{$x \in (0, 1) \cup (1, \infty)$}{$x \in (0, 1) \cup (1, \infty)$}
+\tsQDimRow{100}{100}{100}{100}{100}
+\tsQFeedback{Correct. $\ln x$ defined $\to x > 0$; $|\ln x| > 0 \to \ln x \neq 0 \to x \neq 1$. Clean two-line answer for a clean two-condition question.}
+\begin{tsQCard}{25}{Log of absolute value of log}{Good}{tsBlue}{1.00}{1.00}
+\end{tsQCard}
+
+% ============================================================
+%  CLOSING
+% ============================================================
+
+\tsHone{Closing Note}
+
+Kiran, this is the strongest WA submission I would ever expect to see on Domain. Twenty-five questions, every one correct, with the working visible for each. The discipline of writing $R_1, R_2, R_3$ explicitly and intersecting at the end is exactly what protects you when problems get harder - and they will, in QA and AA.
+
+\par\vspace{0.2cm}
+What this score signals is not just ``you know how to find a domain.'' It signals you've internalised the four habits that matter at JEE Advanced level: (1) decomposing a composite into its primitive constraints, (2) tracking endpoint inclusion/exclusion separately for each constraint, (3) reaching for the right tool - graph, substitution, or sign analysis - rather than defaulting to one, and (4) translating discrete-function constraints (like $[x]$ and $\{x\}$) back to continuous $x$ cleanly.
+
+\par\vspace{0.2cm}
+\tsHthree{Where to go next.}
+
+\begin{tspoints}
+    \item \textbf{Next assignment:} Qualifier's Assignment on Domain (QA - DOM3 or equivalent). QA shifts emphasis from ``apply the rule'' to ``analyse why the rule is what it is'' - you'll see questions where the constraint isn't obvious until you sketch the function.
+    \item \textbf{Adjacent topic to start now:} Range. Domain reasoning gives you half the toolkit; range completes it and is the natural next concept under Functions.
+    \item \textbf{Speed target for QA:} at WA level rigor was right; at QA level, target completing each question in under 4 minutes for the routine ones, with full method shown.
+\end{tspoints}
+
+\tsDisclaimer
+
+\tsSignature
+
+\tsTrackingBlock{TS-WA-DOM2-20260509-KVN-001}{https://thinkingsouls.com/track/TS-WA-DOM2-20260509-KVN-001}
+
+\newpage
+
+\tsHone{Scan Quality Overview}
+
+Across the 25 questions: \textbf{\color{tsGreen}Excellent: 3} \ \textperiodcentered\ \textbf{\color{tsBlue}Good: 19} \ \textperiodcentered\ \textbf{\color{tsAmber}Acceptable: 3} \ \textperiodcentered\ \textbf{\color{tsRed}Poor: 0}
+
+\par\vspace{0.1cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Scan quality affects how reliably the work can be evaluated. Each question's scan quality is logged on its individual card. The tips below help you raise scan quality in future submissions.}}
+
+\tsHone{Scanning Tips for Future Submissions}
+
+Clear scans help your evaluator focus on the mathematics instead of decoding the page. A few small habits make a big difference:
+
+\par\vspace{0.15cm}
+\begin{tsScanTips}
+    \tsTip{1}{Keep fingers and thumbs out of frame.} Hold the page from a corner that's outside the camera view, or use a flat surface and weights (books on the corners). Thumbs in the frame block content and make pages look unprofessional.
+    &
+    \tsTip{2}{One page per image.} Don't capture two notebook pages in one shot. Each question's working should be readable without zooming. If a question spans two pages, that's fine - just take two clean shots.
+    \\\hline
+    \tsTip{3}{Even, indirect lighting.} Avoid direct sunlight or a single overhead lamp - both create shadows or glare strips. Diffuse light from a window (no direct sun) or a desk lamp aimed at the wall works best.
+    &
+    \tsTip{4}{Page flat, camera straight overhead.} A skewed page distorts the math. Use a clipboard or hardback book underneath to flatten the page, and hold the camera parallel to the page (not at an angle).
+    \\\hline
+    \tsTip{5}{Use a darker pen.} Pencil and very light blue ink fade in scans. A regular blue or black ballpoint or gel pen (0.5 mm or thicker) gives the best contrast.
+    &
+    \tsTip{6}{Number every question clearly.} Write the question number large at the start of each answer (e.g.\ \textbf{Q7.}). If you skip a question and come back to it, mark it - don't leave the evaluator hunting.
+    \\\hline
+    \tsTip{7}{Box your final answer.} You already do this well - keep it up. A clear final-answer box at the end of each question saves the evaluator from reading the entire derivation just to find your conclusion.
+    &
+    \tsTip{8}{Use a scanner app, not raw photos.} Apps like Adobe Scan, Microsoft Lens, or CamScanner auto-correct perspective, sharpen text, and compile pages into a single PDF in question order. Always check page order before sending.
+    \\\hline
+    \tsTip{9}{Check page order before exporting.} After scanning, flip through the PDF once. Make sure pages run Q1 $\to$ Q2 $\to \ldots \to$ last, with no missing pages and no upside-down or sideways shots.
+    &
+    \tsTip{10}{Name the file clearly.} Format: \textit{BatchName\_StudentName\_AssignmentCode.pdf} (e.g.\ \textit{SPARK-2027\_KiranVinuNiar\_DOM2.pdf}). Don't use generic names like ``Scan001.pdf'' - they get lost.
+\end{tsScanTips}
+
+\par\vspace{0.4cm}
+\noindent\textbf{Specific to your DOM2 submission:} I noted minor scan quality issues on a handful of pages (Q3, Q7, Q21) where a thumb appeared in frame, the page was slightly skewed, or working ran into the page margin. None of this affected the evaluation - your work was completely readable - but tightening the above ten habits will make every future submission feel professional, and is exactly the kind of attention-to-detail discipline that pays off in JEE Advanced exam-paper presentation.
+
+\end{document}
