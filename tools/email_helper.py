@@ -11,22 +11,10 @@ from email.message import EmailMessage
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-
-
-def get_creds():
-    token_path = os.path.join(os.path.dirname(__file__), "..", "token.json")
-    from tools.setup_drive import SCOPES
-    creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    return creds
-
 
 def gmail_service():
-    return build("gmail", "v1", credentials=get_creds())
+    from web.api.services.credentials import REGISTRY
+    return REGISTRY.get("google_oauth").get_gmail()
 
 
 def send_review_email(
@@ -59,6 +47,27 @@ def send_review_email(
         userId="me", body={"raw": raw}
     ).execute()
     return sent
+
+
+def send_simple_email(
+    to_addr: str,
+    subject: str,
+    body_text: str,
+    body_html: str,
+) -> dict:
+    """Send an email without attachments. Used for approval-confirmation emails
+    that link to AK PDF in Drive rather than attaching it."""
+    msg = EmailMessage()
+    msg["To"] = to_addr
+    msg["Subject"] = subject
+    msg.set_content(body_text)
+    msg.add_alternative(body_html, subtype="html")
+
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
+    service = gmail_service()
+    return service.users().messages().send(
+        userId="me", body={"raw": raw}
+    ).execute()
 
 
 def list_replies_by_thread(thread_id: str) -> list[dict]:
