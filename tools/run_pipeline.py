@@ -14,13 +14,10 @@ import sys
 import time
 
 from dotenv import load_dotenv
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
 
 ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
 
-# Add project root to path so tools.* imports work
+# Add project root to path so tools.* and web.* imports work
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 logging.basicConfig(
@@ -30,19 +27,37 @@ logging.basicConfig(
 )
 log = logging.getLogger("pipeline")
 
-
-def get_creds():
-    token_path = os.path.join(os.path.dirname(__file__), "..", "token.json")
-    from tools.setup_drive import SCOPES
-    creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    return creds
+from web.api.services.credentials import REGISTRY, CredentialBroken  # noqa: E402
 
 
-def run_once():
+def _get_classroom():
+    return REGISTRY.get("google_oauth").get_classroom()
+
+
+def _get_drive():
+    return REGISTRY.get("google_oauth").get_drive()
+
+
+def tick():
+    """Single pipeline iteration. Survives CredentialBroken by logging and returning."""
     load_dotenv(ENV_PATH)
 
+    try:
+        classroom = _get_classroom()
+        drive = _get_drive()
+    except CredentialBroken as exc:
+        log.error(
+            "CREDENTIAL_BROKEN %s %s — see /settings/credentials (%s)",
+            exc.name,
+            exc.status.value,
+            exc.reason or "no detail",
+        )
+        return
+
+    _run_iteration(classroom, drive)
+
+
+def _run_iteration(classroom, drive):
     course_ids_str = os.getenv("CLASSROOM_COURSE_IDS", "").strip()
     reports_id = os.getenv("DRIVE_REPORTS_ID", "").strip()
     keys_id = os.getenv("DRIVE_KEYS_ID", "").strip()
@@ -52,9 +67,6 @@ def run_once():
         return
 
     course_ids = [c.strip() for c in course_ids_str.split(",") if c.strip()]
-    creds = get_creds()
-    classroom = build("classroom", "v1", credentials=creds)
-    drive = build("drive", "v3", credentials=creds)
 
     # 0a. Generate answer keys for any new courseworks (auto-detect)
     log.info("Checking for assignments needing answer keys…")
@@ -81,7 +93,16 @@ def run_once():
     from tools.review_state import load_state, is_approved
     review_state = load_state(drive, keys_id)
 
-    # 1. Find pending submissions
+    # 1. Find pending submissions — but only act on them if AUTO_GRADE=1.
+    # Default is UI-trigger-only: the web console's "Evaluate" buttons drive
+    # grading. The pipeline still does AK generation + review-reply checking
+    # above; this gate just skips the submission-grading block.
+    auto_grade = os.getenv("AUTO_GRADE", "0").strip() == "1"
+    if not auto_grade:
+        log.info("Skipping submission grading — AUTO_GRADE not set "
+                 "(set AUTO_GRADE=1 in .env for old behaviour).")
+        return
+
     from tools.watch_classroom import list_pending
     from datetime import datetime, timezone
     cutoff = None
@@ -136,6 +157,14 @@ def run_once():
                 "assignment_type": sub["assignment_type"],
                 "assignment_code": sub["assignment_code"],
             }
+            # Prefer teacher-set display_name over Classroom roster name.
+            try:
+                from tools.student_profiles import load_profiles as _lp
+                _dn = (_lp(None, None).get(meta["student_id"], {}).get("display_name") or "").strip()
+                if _dn:
+                    meta["student_name"] = _dn
+            except Exception:
+                pass  # non-fatal
 
             # 3. Evaluate
             log.info(f"  Evaluating with Claude…")
@@ -175,7 +204,7 @@ def main():
     run_once_mode = "--once" in sys.argv
 
     if run_once_mode:
-        run_once()
+        tick()
         return
 
     load_dotenv(ENV_PATH)
@@ -184,7 +213,7 @@ def main():
 
     while True:
         try:
-            run_once()
+            tick()
         except KeyboardInterrupt:
             log.info("Stopped.")
             break
