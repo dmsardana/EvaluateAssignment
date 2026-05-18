@@ -70,6 +70,21 @@ def send_simple_email(
     ).execute()
 
 
+def send_email(to: str, subject: str, body: str) -> dict:
+    """Adapter for plain-text ops alerts.
+
+    Bridges StatusEdgeNotifier (uses to/subject/body kwargs) to
+    send_simple_email (which requires body_html). The body is plain text;
+    we pass it as-is to both slots.
+    """
+    return send_simple_email(
+        to_addr=to,
+        subject=subject,
+        body_text=body,
+        body_html=f"<pre>{body}</pre>",
+    )
+
+
 def list_replies_by_thread(thread_id: str) -> list[dict]:
     """Return all messages in a thread sorted by internalDate ascending."""
     service = gmail_service()

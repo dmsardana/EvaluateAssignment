@@ -72,3 +72,30 @@ def test_no_recursion_when_send_email_fails(store_mock, caplog):
     n = _make_notifier(send, store_mock)
     n.on_transition("google_oauth", Status.OK, Status.REVOKED, "x")  # must not raise
     assert any("gmail down" in r.message.lower() for r in caplog.records)
+
+
+def test_registry_fires_notifier_on_transition(monkeypatch):
+    from web.api.services.credentials import REGISTRY, Status, HealthSnapshot
+
+    received = []
+    def fake_send(to, subject, body):
+        received.append(subject)
+
+    REGISTRY._subscribers = []
+    REGISTRY._snaps["test_cred"] = HealthSnapshot(name="test_cred", status=Status.OK)
+
+    from web.api.services.credentials.notifier import StatusEdgeNotifier
+    n = StatusEdgeNotifier(
+        send_email=fake_send,
+        read_one=lambda name: {"notified_at": None},
+        update_notified_at=lambda name, when: None,
+        recipient="ops@example.com",
+    )
+    REGISTRY.subscribe_transition(n.on_transition)
+
+    monkeypatch.setattr("web.api.services.credentials.store.upsert_health",
+                        lambda **kw: None)
+    REGISTRY.report_status("test_cred", Status.OK, None)
+    REGISTRY.report_status("test_cred", Status.REVOKED, "invalid_grant")
+    assert len(received) == 1
+    assert "REVOKED" in received[0]
