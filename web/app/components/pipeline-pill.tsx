@@ -4,6 +4,8 @@ import * as Popover from "@radix-ui/react-popover";
 
 import { useCredentials } from "@/lib/credentials";
 
+import { CredentialsPopover } from "./credentials-popover";
+
 type Tone = "ok" | "warn" | "broken" | "unknown";
 
 // Map abstract tones to the existing design system.
@@ -72,10 +74,7 @@ export function PipelinePill() {
           sideOffset={8}
           className="z-50 w-96 rounded-lg border border-ink-10 bg-ink-5 p-3 text-ink-100 shadow-xl"
         >
-          {/* Task 5.3 will replace this placeholder with <CredentialsPopover /> */}
-          <div className="text-xs text-ink-60">
-            Credentials panel — landing in next commit.
-          </div>
+          <CredentialsPopover />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
