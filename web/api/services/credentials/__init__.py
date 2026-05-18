@@ -94,3 +94,8 @@ class Registry:
 
 
 REGISTRY = Registry()
+
+# Populate the singleton with the default handles.
+from web.api.services.credentials.register_defaults import register_defaults  # noqa: E402
+
+register_defaults()
