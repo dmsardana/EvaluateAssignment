@@ -124,3 +124,36 @@ def test_oauth_callback_writes_token_on_success(client, monkeypatch, tmp_path):
     resp = client.get("/api/credentials/google_oauth/oauth-callback?code=X&state=GOOD-STATE")
     assert resp.status_code == 200
     assert token_target.read_text() == '{"token":"new","refresh_token":"r"}'
+
+
+def test_update_anthropic_validates_before_writing_env(client, monkeypatch):
+    monkeypatch.setattr("web.api.routers.credentials._auth_required",
+                        lambda req: None)
+    monkeypatch.setattr(
+        "web.api.routers.credentials._validate_anthropic_key",
+        lambda key: (False, "401 invalid"),
+    )
+    resp = client.post("/api/credentials/anthropic_api/update",
+                       json={"api_key": "sk-ant-bad"})
+    assert resp.status_code == 400
+    assert "invalid" in resp.json()["detail"].lower()
+
+
+def test_update_anthropic_writes_env_on_success(client, monkeypatch, tmp_path):
+    monkeypatch.setattr("web.api.routers.credentials._auth_required",
+                        lambda req: None)
+    monkeypatch.setattr(
+        "web.api.routers.credentials._validate_anthropic_key",
+        lambda key: (True, None),
+    )
+
+    written = {}
+    def fake_set_key(env_path, key, value):
+        written[key] = value
+    monkeypatch.setattr("web.api.routers.credentials.dotenv.set_key", fake_set_key)
+    monkeypatch.setattr("web.api.routers.credentials.ENV_PATH", str(tmp_path / ".env"))
+
+    resp = client.post("/api/credentials/anthropic_api/update",
+                       json={"api_key": "sk-ant-good"})
+    assert resp.status_code == 200
+    assert written.get("ANTHROPIC_API_KEY") == "sk-ant-good"

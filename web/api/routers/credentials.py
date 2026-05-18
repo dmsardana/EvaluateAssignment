@@ -6,8 +6,10 @@ import os
 from pathlib import Path
 from typing import Any
 
+import dotenv
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 from web.api.services.credentials import REGISTRY, Status
 from web.api.services.credentials import store
@@ -16,10 +18,28 @@ from web.api.services.credentials import google as google_module
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
 
+# parents[3] from web/api/routers/credentials.py resolves to the repo root.
+ENV_PATH = str(Path(__file__).resolve().parents[3] / ".env")
+
+
+class UpdateKeyBody(BaseModel):
+    api_key: str
+
 
 def _auth_required(request: Request) -> None:
     """Defense-in-depth check; Next.js middleware already gates /api/* at the proxy layer."""
     return None
+
+
+def _validate_anthropic_key(key: str) -> tuple[bool, str | None]:
+    import anthropic
+    try:
+        anthropic.Anthropic(api_key=key).models.list()
+        return True, None
+    except anthropic.AuthenticationError as exc:
+        return False, str(exc)[:200]
+    except Exception as exc:
+        return False, str(exc)[:200]
 
 
 @router.get("/status")
@@ -90,3 +110,26 @@ def google_oauth_callback(code: str, state: str, _: None = Depends(_auth_require
         </script>
         </body></html>"""
     )
+
+
+@router.post("/anthropic_api/update")
+def update_anthropic(body: UpdateKeyBody, _: None = Depends(_auth_required)) -> dict[str, str]:
+    key = body.api_key.strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="api_key is empty")
+    ok, err = _validate_anthropic_key(key)
+    if not ok:
+        raise HTTPException(status_code=400, detail=f"key did not validate: {err}")
+
+    dotenv.set_key(ENV_PATH, "ANTHROPIC_API_KEY", key)
+    os.environ["ANTHROPIC_API_KEY"] = key
+
+    try:
+        handle = REGISTRY.get("anthropic_api")
+        handle._cached = None
+        status, err = handle.check_health()
+        REGISTRY.report_status("anthropic_api", status, err)
+    except KeyError:
+        pass
+
+    return {"ok": "true"}
