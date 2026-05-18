@@ -6,14 +6,54 @@ Run:
 """
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from web.api.routers import credentials, queue, reports, scores, settings, students, wire
+from web.api.services.credentials.scheduler import (
+    run_one_tick,
+    start_scheduler,
+    stop_scheduler,
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1) Immediate credential health check so the rest of the app sees fresh status.
+    try:
+        run_one_tick()
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("initial credential tick failed")
+
+    # 2) Schedule recurring credential checks (every 15 minutes).
+    start_scheduler()
+
+    # 3) Reap zombie GENERATING entries left over from prior process death.
+    #    A daemon thread holding GENERATING dies when uvicorn exits. The state
+    #    entry on Drive is left dangling. Sweep on every boot so the UI doesn't
+    #    show a forever-spinning drawer for a worker that no longer exists.
+    try:
+        from web.api.deps import get_drive, get_keys_folder_id
+        from web.api.services.queue import reap_zombie_generations
+        n = reap_zombie_generations(get_drive(), get_keys_folder_id())
+        if n:
+            print(f"[boot] reaped {n} zombie GENERATING entries", flush=True)
+    except Exception as e:  # noqa: BLE001 — never break startup
+        print(f"[boot] zombie reaper failed (non-fatal): {e}", flush=True)
+
+    yield
+
+    # Shutdown
+    stop_scheduler()
+
 
 app = FastAPI(
     title="ThinkingSouls Evaluation Console API",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -36,21 +76,6 @@ app.include_router(students.router)
 app.include_router(reports.router)
 app.include_router(scores.router)
 app.include_router(credentials.router)
-
-
-@app.on_event("startup")
-def _reap_zombies():
-    """A daemon thread holding GENERATING dies when uvicorn exits. The state
-    entry on Drive is left dangling. Sweep on every boot so the UI doesn't
-    show a forever-spinning drawer for a worker that no longer exists."""
-    try:
-        from web.api.deps import get_drive, get_keys_folder_id
-        from web.api.services.queue import reap_zombie_generations
-        n = reap_zombie_generations(get_drive(), get_keys_folder_id())
-        if n:
-            print(f"[boot] reaped {n} zombie GENERATING entries", flush=True)
-    except Exception as e:  # noqa: BLE001 — never break startup
-        print(f"[boot] zombie reaper failed (non-fatal): {e}", flush=True)
 
 
 @app.get("/api/health")
