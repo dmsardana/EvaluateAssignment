@@ -20,6 +20,10 @@ def register_defaults() -> None:
     if "google_oauth" not in {h.name for h in REGISTRY.all()}:
         REGISTRY.register(GoogleCredentialHandle(token_path=token_path))
 
+    if "anthropic_api" not in {h.name for h in REGISTRY.all()}:
+        from web.api.services.credentials.anthropic import AnthropicCredentialHandle
+        REGISTRY.register(AnthropicCredentialHandle())
+
     recipient = os.environ.get("OPS_ALERT_EMAIL", "").strip() or None
     if recipient and not getattr(REGISTRY, "_notifier_attached", False):
         from tools.email_helper import send_email  # late import — avoids circular
