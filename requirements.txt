@@ -4,3 +4,9 @@ google-auth-httplib2>=0.2.0
 google-auth-oauthlib>=1.1.0
 python-dotenv>=1.0.0
 jinja2>=3.1.0
+# Required by FastAPI's File/UploadFile for the manual answer-key upload route.
+python-multipart>=0.0.20
+# Postgres driver — bundles libpq, no host install needed.
+psycopg[binary,pool]>=3.2.0
+# Background credential health checks (15-min interval).
+apscheduler>=3.10.4
