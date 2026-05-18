@@ -57,3 +57,33 @@ def test_recheck_unknown_returns_404(client, monkeypatch):
                         MagicMock(side_effect=KeyError("nope")))
     resp = client.post("/api/credentials/nope/recheck")
     assert resp.status_code == 404
+
+
+def test_reauth_returns_consent_url(client, monkeypatch):
+    monkeypatch.setattr("web.api.routers.credentials._auth_required",
+                        lambda req: None)
+    monkeypatch.setattr(
+        "web.api.routers.credentials.google_module.start_reauth_flow",
+        lambda: ("https://accounts.google.com/o/oauth2/auth?fake=1", "STATE-TOKEN"),
+    )
+    resp = client.post("/api/credentials/google_oauth/reauth")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["consent_url"].startswith("https://accounts.google.com/")
+    assert body["state"] == "STATE-TOKEN"
+
+
+def test_reauth_idempotent_within_window(client, monkeypatch):
+    monkeypatch.setattr("web.api.routers.credentials._auth_required",
+                        lambda req: None)
+    calls = []
+    def fake_start():
+        calls.append(1)
+        return ("https://x/", "S")
+    monkeypatch.setattr(
+        "web.api.routers.credentials.google_module.start_reauth_flow",
+        fake_start,
+    )
+    r1 = client.post("/api/credentials/google_oauth/reauth")
+    r2 = client.post("/api/credentials/google_oauth/reauth")
+    assert r1.json()["state"] == r2.json()["state"]

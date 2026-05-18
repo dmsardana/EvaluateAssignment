@@ -107,3 +107,37 @@ def _scrub(msg: str) -> str:
     for needle in _SECRET_NEEDLES:
         out = out.replace(needle, "[redacted]")
     return out
+
+
+# ---- OAuth flow helpers
+from datetime import datetime, timezone, timedelta
+
+from google_auth_oauthlib.flow import Flow
+
+_PENDING_FLOWS: dict[str, Flow] = {}
+_LAST_FLOW_STATE: dict[str, tuple[str, datetime]] = {}
+
+CALLBACK_URL = "http://localhost:8000/api/credentials/google_oauth/oauth-callback"
+
+
+def start_reauth_flow() -> tuple[str, str]:
+    """Returns (consent_url, state). Idempotent within a 5-minute window."""
+    now = datetime.now(timezone.utc)
+    prev = _LAST_FLOW_STATE.get("google_oauth")
+    if prev is not None:
+        state, started = prev
+        if now - started < timedelta(minutes=5) and state in _PENDING_FLOWS:
+            flow = _PENDING_FLOWS[state]
+            consent_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
+            return consent_url, state
+
+    creds_path = str(Path(__file__).resolve().parents[4] / "credentials.json")
+    flow = Flow.from_client_secrets_file(
+        creds_path,
+        scopes=list(DEFAULT_SCOPES),
+        redirect_uri=CALLBACK_URL,
+    )
+    consent_url, state = flow.authorization_url(prompt="consent", access_type="offline")
+    _PENDING_FLOWS[state] = flow
+    _LAST_FLOW_STATE["google_oauth"] = (state, now)
+    return consent_url, state

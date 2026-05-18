@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from web.api.services.credentials import REGISTRY, Status
 from web.api.services.credentials import store
+from web.api.services.credentials import google as google_module
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/credentials", tags=["credentials"])
@@ -52,3 +53,12 @@ def recheck(name: str, _: None = Depends(_auth_required)) -> dict[str, str]:
     status, err = handle.check_health()
     REGISTRY.report_status(name, status, err)
     return {"name": name, "status": status.value}
+
+
+@router.post("/google_oauth/reauth")
+def google_reauth(_: None = Depends(_auth_required)) -> dict[str, str]:
+    try:
+        consent_url, state = google_module.start_reauth_flow()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=f"credentials.json missing: {exc}")
+    return {"consent_url": consent_url, "state": state}
