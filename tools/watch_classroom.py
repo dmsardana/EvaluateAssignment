@@ -9,6 +9,7 @@ Usage:
 """
 
 import json
+import logging
 import os
 import re
 import sys
@@ -17,12 +18,11 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
 
 ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
 SCORES_FILENAME = "scores.csv"
+
+log = logging.getLogger(__name__)
 
 # Order matters — longer keywords first to win against shorter substring matches.
 TYPE_MAP = [
@@ -46,15 +46,6 @@ INLINE_TYPE_RE = re.compile(
     r"\bType\s*[:\-]?\s*(WA|QA|AA|ZA)\b|\[(WA|QA|AA|ZA)\]",
     re.IGNORECASE,
 )
-
-
-def get_creds():
-    token_path = os.path.join(os.path.dirname(__file__), "..", "token.json")
-    from tools.setup_drive import SCOPES  # reuse scope list
-    creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-    return creds
 
 
 def parse_assignment_meta(title: str) -> tuple[str, str]:
@@ -114,7 +105,12 @@ def parse_iso_datetime(s: str) -> datetime:
 
 
 def load_processed_keys(drive, reports_folder_id: str) -> set:
-    """Return set of '{type}_{num}_{student_id}' strings already in scores.csv."""
+    """Return set of '{code}_{student_id}' strings already in scores.csv.
+
+    Intentionally excludes assignment_type from the key so that a Classroom
+    title rename (e.g. QA→WA) does not cause the same submission to be
+    re-evaluated and double-counted in scores.csv.
+    """
     query = (
         f"name='{SCORES_FILENAME}' and '{reports_folder_id}' in parents and trashed=false"
     )
@@ -137,7 +133,8 @@ def load_processed_keys(drive, reports_folder_id: str) -> set:
     for line in buf.getvalue().decode("utf-8").splitlines()[1:]:  # skip header
         parts = line.split(",")
         if len(parts) >= 3:
-            processed.add(f"{parts[0]}_{parts[1]}_{parts[2]}")  # type_num_studentId
+            # parts[0]=assignment_type, parts[1]=assignment_code, parts[2]=student_id
+            processed.add(f"{parts[1]}_{parts[2]}")  # code_studentId (type-agnostic)
     return processed
 
 
@@ -200,7 +197,7 @@ def list_pending(
                             pass
 
                 student_id = sub["userId"]
-                key = f"{asgn_type}_{asgn_code}_{student_id}"
+                key = f"{asgn_code}_{student_id}"  # type-agnostic; matches load_processed_keys
                 if key in processed:
                     continue
 
@@ -249,9 +246,18 @@ def main():
         cutoff = datetime.fromisoformat(cutoff_str).replace(tzinfo=timezone.utc)
         print(f"Filtering to submissions on/after {cutoff.isoformat()}", file=sys.stderr)
 
-    creds = get_creds()
-    classroom = build("classroom", "v1", credentials=creds)
-    drive = build("drive", "v3", credentials=creds)
+    from web.api.services.credentials import REGISTRY, CredentialBroken
+    try:
+        classroom = REGISTRY.get("google_oauth").get_classroom()
+        drive = REGISTRY.get("google_oauth").get_drive()
+    except CredentialBroken as exc:
+        log.error(
+            "CREDENTIAL_BROKEN %s %s — see /settings/credentials (%s)",
+            exc.name,
+            exc.status.value,
+            exc.reason or "no detail",
+        )
+        sys.exit(1)
 
     pending = list_pending(course_ids, classroom, drive, reports_id, cutoff=cutoff)
     print(json.dumps(pending, indent=2))
