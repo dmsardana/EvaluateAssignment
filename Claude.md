@@ -34,7 +34,7 @@ Final outputs (report PDFs, scores.csv, answer keys, state JSON) live in Drive �
 ## Key Conventions
 
 - **Assignment titles** are parsed for type (WA/QA/AA) and code. Three accepted formats: `(Code: TYPE IDENTIFIER)`, `Type: XX | Code: YYY`, or `[XX]` with leading number. See `tools/watch_classroom.py:parse_assignment_meta`.
-- **Per-question rubric** is locked: 0/0.5/1 per dimension; weights 0.40/0.20/0.20/0.10/0.10. Per-question score capped at 1.00. **Do not change weights or scale.**
+- **Per-question rubric**: continuous 0..1 per dimension (rounded to 2 decimals — full range, not 0/0.5/1 buckets); weights 0.40/0.20/0.20/0.10/0.10. Per-question score capped at 1.00. Weights are locked; the dimension scale itself is intentionally continuous so aggregates land at fractional percentages like 33.3%, 67.4%, etc.
 - **Performance bands**: Trailblazer ≥75%, Qualifier 60–74%, Developing 45–59%, Foundational Gaps <45%.
 - **Report style** is defined in `tools/templates/ts_evalreport.sty` (copied from `references/templates/`). Compilation requires `xelatex` features — tectonic handles this. Fonts (TeX Gyre Heros + Latin Modern Math) are bundled in `tools/templates/*.otf`.
 - **Filename pattern** for reports: `{StudentName}_{CODE}_{YYYY-MM-DD}_Report.pdf`. StudentName is CamelCase, no spaces, diacritics stripped.
@@ -50,6 +50,8 @@ python3 tools/<other_script>.py          # individual tools (see RUNBOOK)
 
 No build system. Tools are standalone Python scripts with credentials from `.env` (via `python-dotenv`).
 
+The **web console + FastAPI** layer is a separate process. Start it via `scripts/start-api.sh` (production, no auto-reload — safe to run during evaluations). Use `scripts/dev-api.sh` only when actively editing API code; its `--reload` SIGTERMs in-flight workers and corrupts long Anthropic calls (this caused the Advaith Govind empty-response bug). See [OPERATIONS.md](OPERATIONS.md#two-api-server-modes--which-to-use-when) for the full distinction.
+
 ## Working in This Repo
 
 **Before writing new code:** Check `tools/` for an existing script. Only create new tools when nothing fits.
@@ -63,3 +65,12 @@ No build system. Tools are standalone Python scripts with credentials from `.env
 ## Credentials
 
 `.env` is the only place for API keys and secrets (gitignored). Google OAuth uses `credentials.json` + `token.json` (both gitignored).
+
+All API credential access goes through `web.api.services.credentials.REGISTRY`. Do not load `token.json` or read `ANTHROPIC_API_KEY` from `os.environ` directly in new code. To use Google APIs:
+
+```python
+from web.api.services.credentials import REGISTRY
+classroom = REGISTRY.get("google_oauth").get_classroom()
+```
+
+If the credential is broken, `get_*()` raises `CredentialBroken`; pipeline tools catch this in their `tick()` handler and skip the tick without crashing. See [OPERATIONS.md](OPERATIONS.md) → "Credential health & recovery" for operator setup and the smoke test.
