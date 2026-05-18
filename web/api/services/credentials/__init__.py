@@ -84,13 +84,41 @@ class Registry:
         return dict(self._snaps)
 
     def report_status(self, name: str, status: Status, err: str | None) -> None:
+        import logging
+
+        log = logging.getLogger(__name__)
         now = datetime.now(timezone.utc)
+
+        # In-memory snapshot first — independent of DB success.
         snap = self._snaps.setdefault(name, HealthSnapshot(name=name))
+        prev_status = snap.status
         snap.status = status
         snap.last_checked_at = now
         snap.last_error = err
         if status is Status.OK:
             snap.last_ok_at = now
+
+        # Persist (best-effort).
+        try:
+            from web.api.services.credentials import store
+            store.upsert_health(name=name, status=status, last_error=err, now=now)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("credentials store unavailable, in-memory only: %s", exc)
+
+        # Fire transition callbacks.
+        if prev_status != status:
+            self._fire_transition(name, prev_status, status, err)
+
+    def subscribe_transition(self, fn) -> None:
+        self._subscribers.append(fn)
+
+    def _fire_transition(self, name: str, old: Status, new: Status, err: str | None) -> None:
+        import logging
+        for fn in self._subscribers:
+            try:
+                fn(name, old, new, err)
+            except Exception:  # noqa: BLE001
+                logging.getLogger(__name__).exception("notifier subscriber failed")
 
 
 REGISTRY = Registry()

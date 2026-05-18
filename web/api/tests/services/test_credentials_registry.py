@@ -54,3 +54,34 @@ def test_module_level_singleton_exists():
 
     assert hasattr(credentials, "REGISTRY")
     assert isinstance(credentials.REGISTRY, credentials.Registry)
+
+
+def test_report_status_writes_to_store_when_available(monkeypatch):
+    from web.api.services.credentials import Registry, Status
+
+    calls = []
+
+    def fake_upsert(name, status, last_error, now):
+        calls.append((name, status, last_error))
+
+    monkeypatch.setattr("web.api.services.credentials.store.upsert_health", fake_upsert)
+
+    reg = Registry()
+    reg.report_status("google_oauth", Status.REVOKED, "invalid_grant")
+    assert calls == [("google_oauth", Status.REVOKED, "invalid_grant")]
+
+
+def test_report_status_falls_back_to_memory_on_db_error(monkeypatch, caplog):
+    import logging
+    from web.api.services.credentials import Registry, Status
+
+    def boom(*a, **kw):
+        raise RuntimeError("postgres down")
+
+    monkeypatch.setattr("web.api.services.credentials.store.upsert_health", boom)
+
+    reg = Registry()
+    with caplog.at_level(logging.WARNING):
+        reg.report_status("google_oauth", Status.REVOKED, "invalid_grant")
+    assert reg.snapshot()["google_oauth"].status is Status.REVOKED
+    assert any("postgres down" in r.message.lower() for r in caplog.records)
