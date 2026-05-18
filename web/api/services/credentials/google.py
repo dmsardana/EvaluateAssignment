@@ -141,3 +141,40 @@ def start_reauth_flow() -> tuple[str, str]:
     _PENDING_FLOWS[state] = flow
     _LAST_FLOW_STATE["google_oauth"] = (state, now)
     return consent_url, state
+
+
+def finish_reauth_flow(code: str, state: str, token_path: Path) -> None:
+    """Complete the OAuth flow:
+       1. Look up the pending Flow by state token
+       2. Exchange code for tokens
+       3. Validate with a Drive API probe
+       4. Atomically write token.json
+       5. Report OK to REGISTRY
+    """
+    from web.api.services.credentials import REGISTRY
+
+    flow = _PENDING_FLOWS.pop(state, None)
+    if flow is None:
+        raise ValueError("invalid or expired state token")
+
+    flow.fetch_token(code=code)
+    creds = flow.credentials
+    if not _validate_creds_with_drive_call(creds):
+        raise ValueError("new token did not pass Drive validation probe")
+
+    token_path = Path(token_path)
+    tmp = token_path.with_suffix(token_path.suffix + ".tmp")
+    tmp.write_text(creds.to_json())
+    os.replace(tmp, token_path)
+
+    REGISTRY.report_status("google_oauth", Status.OK, None)
+
+
+def _validate_creds_with_drive_call(creds) -> bool:
+    try:
+        drive = build("drive", "v3", credentials=creds, cache_discovery=False)
+        drive.about().get(fields="user").execute()
+        return True
+    except Exception as exc:
+        log.warning("token validation failed: %s", exc)
+        return False

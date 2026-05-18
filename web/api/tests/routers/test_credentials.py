@@ -87,3 +87,40 @@ def test_reauth_idempotent_within_window(client, monkeypatch):
     r1 = client.post("/api/credentials/google_oauth/reauth")
     r2 = client.post("/api/credentials/google_oauth/reauth")
     assert r1.json()["state"] == r2.json()["state"]
+
+
+def test_oauth_callback_invalid_state_returns_400(client, monkeypatch):
+    monkeypatch.setattr("web.api.routers.credentials._auth_required",
+                        lambda req: None)
+    monkeypatch.setattr(
+        "web.api.routers.credentials.google_module._PENDING_FLOWS",
+        {},
+    )
+    resp = client.get("/api/credentials/google_oauth/oauth-callback?code=X&state=BAD")
+    assert resp.status_code == 400
+
+
+def test_oauth_callback_writes_token_on_success(client, monkeypatch, tmp_path):
+    monkeypatch.setattr("web.api.routers.credentials._auth_required",
+                        lambda req: None)
+
+    flow = MagicMock()
+    flow.fetch_token.return_value = None
+    fake_creds = MagicMock()
+    fake_creds.to_json.return_value = '{"token":"new","refresh_token":"r"}'
+    flow.credentials = fake_creds
+
+    monkeypatch.setattr(
+        "web.api.routers.credentials.google_module._PENDING_FLOWS",
+        {"GOOD-STATE": flow},
+    )
+    monkeypatch.setattr(
+        "web.api.routers.credentials.google_module._validate_creds_with_drive_call",
+        lambda creds: True,
+    )
+    token_target = tmp_path / "token.json"
+    monkeypatch.setenv("GOOGLE_TOKEN_PATH", str(token_target))
+
+    resp = client.get("/api/credentials/google_oauth/oauth-callback?code=X&state=GOOD-STATE")
+    assert resp.status_code == 200
+    assert token_target.read_text() == '{"token":"new","refresh_token":"r"}'

@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 
 from web.api.services.credentials import REGISTRY, Status
 from web.api.services.credentials import store
@@ -62,3 +65,28 @@ def google_reauth(_: None = Depends(_auth_required)) -> dict[str, str]:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=500, detail=f"credentials.json missing: {exc}")
     return {"consent_url": consent_url, "state": state}
+
+
+@router.get("/google_oauth/oauth-callback", response_class=HTMLResponse)
+def google_oauth_callback(code: str, state: str, _: None = Depends(_auth_required)) -> HTMLResponse:
+    # parents[3] from web/api/routers/credentials.py resolves to the repo root.
+    token_path = Path(os.environ.get(
+        "GOOGLE_TOKEN_PATH",
+        Path(__file__).resolve().parents[3] / "token.json",
+    ))
+    try:
+        google_module.finish_reauth_flow(code=code, state=state, token_path=token_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return HTMLResponse(
+        """<!doctype html><html><body>
+        <p>Reconnected. You can close this tab.</p>
+        <script>
+          try {
+            localStorage.setItem("ts:google_reconnected", String(Date.now()));
+            window.close();
+          } catch (e) {}
+        </script>
+        </body></html>"""
+    )
