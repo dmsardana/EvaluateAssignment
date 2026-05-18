@@ -93,3 +93,36 @@ def test_atomic_write_does_not_corrupt_existing_token(valid_token_file: Path, mo
         h._atomic_write(fake_creds)
 
     assert valid_token_file.read_text() == original
+
+
+def test_get_classroom_returns_service_when_ok(valid_token_file: Path):
+    from web.api.services.credentials.google import GoogleCredentialHandle
+
+    h = GoogleCredentialHandle(token_path=valid_token_file)
+    fake_creds = MagicMock(valid=True, expired=False)
+    fake_service = MagicMock(name="classroom-service")
+    with (
+        patch("web.api.services.credentials.google.Credentials.from_authorized_user_file",
+              return_value=fake_creds),
+        patch("web.api.services.credentials.google.build", return_value=fake_service) as build_mock,
+    ):
+        service = h.get_classroom()
+    assert service is fake_service
+    build_mock.assert_called_once_with("classroom", "v1", credentials=fake_creds, cache_discovery=False)
+
+
+def test_get_drive_raises_credential_broken_when_revoked(valid_token_file: Path):
+    from web.api.services.credentials.google import GoogleCredentialHandle
+    from web.api.services.credentials import CredentialBroken, Status
+
+    h = GoogleCredentialHandle(token_path=valid_token_file)
+    fake_creds = MagicMock(valid=False, expired=True, refresh_token="1//fake")
+    fake_creds.refresh.side_effect = RefreshError("invalid_grant", {})
+
+    with patch("web.api.services.credentials.google.Credentials.from_authorized_user_file",
+               return_value=fake_creds):
+        with pytest.raises(CredentialBroken) as exc_info:
+            h.get_drive()
+
+    assert exc_info.value.name == "google_oauth"
+    assert exc_info.value.status is Status.REVOKED
