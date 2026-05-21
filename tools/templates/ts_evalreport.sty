@@ -32,6 +32,7 @@
 \RequirePackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
 \RequirePackage{enumitem}
+\RequirePackage{xfp}             % \fpeval — used by \tsDimBoxAuto to show weight × score
 \RequirePackage{array}
 \RequirePackage{tabularx}
 \RequirePackage{colortbl}
@@ -645,9 +646,12 @@
         \begin{minipage}[t][20pt][t]{\linewidth}\centering%
         {\fontsize{16pt}{18pt}\selectfont\color{white}\textbf{#2\%}}%
         \end{minipage}\\[0pt]
-        % Row 3: Weighted Score (fixed height at bottom)
+        % Row 3: Weight + Score split (May-14 reference format).
+        % #3 is the static weight (0.40, 0.20, …) and #2 is the dimension
+        % percentage. The weighted contribution = #3 × #2/100, rounded
+        % to 2 decimals via xfp's \fpeval.
         \begin{minipage}[t][10pt][t]{\linewidth}\centering%
-        {\fontsize{6.5pt}{8pt}\selectfont\color{white} Weighted Score = #3}%
+        {\fontsize{6.5pt}{8pt}\selectfont\color{white} Weight = #3\ \ Score = \fpeval{round(#3*#2/100, 2)}}%
         \end{minipage}%
     \end{tcolorbox}%
 }

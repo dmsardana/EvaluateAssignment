@@ -236,9 +236,29 @@ def generate(evaluation: dict) -> str:
     # Override the student.name with the title-cased version for display only
     student_display = {**evaluation["student"], "name": display_name}
 
+    # Annotate each question with a simple-average dimension percentage so the
+    # Summary of Rubric Matrix can render with one number per row and sort by
+    # it. Keeps the JSON shape unchanged for cached evaluations.
+    questions_for_template = []
+    for q in evaluation.get("questions") or []:
+        dims = q.get("dimensions") or {}
+        scores = [
+            (dims.get(k) or {}).get("score", 0) or 0
+            for k in (
+                "concept_understanding",
+                "approach_method",
+                "step_by_step",
+                "numerical_accuracy",
+                "presentation",
+            )
+        ]
+        avg_pct = int(round((sum(scores) / 5.0) * 100)) if scores else 0
+        questions_for_template.append({**q, "avg_pct": avg_pct})
+
     context = {
         **evaluation,
         "student": student_display,
+        "questions": questions_for_template,
         "tier_full_name": TIER_FULL_NAME.get(
             evaluation["assignment"]["type"], evaluation["assignment"]["type"]
         ),

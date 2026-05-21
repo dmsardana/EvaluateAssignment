@@ -97,7 +97,7 @@
 \par\vspace{0.3cm}
 {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question score formula: }}%
 {\fontsize{10pt}{12pt}\selectfont $Q = 0.40 \times \mathrm{CU} + 0.20 \times \mathrm{AM} + 0.20 \times \mathrm{SS} + 0.10 \times \mathrm{NA} + 0.10 \times \mathrm{PR}$}%
-{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{, where each dimension is scored 0, 0.5, or 1. Maximum 1.00 mark per question; aggregate over (((( summary.total_questions )))) questions.}}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{, where each dimension is scored on a continuous 0--1 scale (full range used, not coarse buckets). Maximum 1.00 mark per question; aggregate over (((( summary.total_questions )))) questions.}}
 
 % ============================================================
 %  CONCEPT DEPENDENCY MAP
@@ -118,12 +118,56 @@
 ((* endif *))
 
 % ============================================================
-%  MISCONCEPTIONS (conditional, between Concept Map and SWOT)
+%  SUMMARY OF RUBRIC MATRIX
+%  Q × dimensions × Avg, sorted by average score (highest first).
+%  Reintroduced from the May-14 reference format; provides a quick
+%  scan of where strengths and weak spots sit per question.
+% ============================================================
+((* if questions *))
+\par\vspace{0.4cm}
+
+\tsHone{Summary of Rubric Matrix}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Each question scored on the same 5 dimensions used for the aggregate. Cell color signals performance: green $\geq$ 75\%, amber 50--74\%, red $<$ 50\%.}}
+
+\par\vspace{0.25cm}
+\noindent
+\begingroup
+\setlength{\tabcolsep}{6pt}%
+\renewcommand{\arraystretch}{1.35}%
+\arrayrulecolor{tsLightGrey}%
+\fontsize{8.5pt}{10pt}\selectfont
+\begin{tabular}{@{}l*{6}{>{\centering\arraybackslash}p{1.7cm}}@{}}
+\hline
+{\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} Q. NO.} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{CONCEPTUAL\\UNDERSTANDING}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{APPROACH\\\&\ METHOD}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{STEP-BY-STEP\\EXECUTION}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{NUMERICAL\\ACCURACY}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{PRESENTATION\\\&\ CLARITY}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{AVERAGE\\SCORE}} \\
+\hline
+((*- for q in questions | sort(attribute='avg_pct', reverse=True) *))
+\textbf{(((( q.number ))))} &
+{\color{(((( status_color(pct(q.dimensions.concept_understanding.score)) ))))}\textbf{(((( pct(q.dimensions.concept_understanding.score) ))))\%}} &
+{\color{(((( status_color(pct(q.dimensions.approach_method.score)) ))))}\textbf{(((( pct(q.dimensions.approach_method.score) ))))\%}} &
+{\color{(((( status_color(pct(q.dimensions.step_by_step.score)) ))))}\textbf{(((( pct(q.dimensions.step_by_step.score) ))))\%}} &
+{\color{(((( status_color(pct(q.dimensions.numerical_accuracy.score)) ))))}\textbf{(((( pct(q.dimensions.numerical_accuracy.score) ))))\%}} &
+{\color{(((( status_color(pct(q.dimensions.presentation.score)) ))))}\textbf{(((( pct(q.dimensions.presentation.score) ))))\%}} &
+{\color{(((( status_color(q.avg_pct) ))))}\textbf{(((( q.avg_pct ))))\%}} \\
+((*- endfor *))
+\hline
+\end{tabular}
+\endgroup
+((* endif *))
+
+% ============================================================
+%  MISCONCEPTIONS (conditional, between Rubric Matrix and SWOT)
 % ============================================================
 ((* if misconceptions *))
 \needspace{6cm}
 
-\tsHone{Misconceptions Identified}
+\tsHone{Misconceptual Observations Identified}
 
 \begin{tsMisconceptions}
 ((*- for m in misconceptions *))
