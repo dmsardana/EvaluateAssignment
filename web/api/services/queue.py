@@ -1387,7 +1387,8 @@ def evaluate_one_submission(
     keys_folder_id: str,
     reports_folder_id: str,
     force_reeval: bool = False,
-    model: str | None = None,  # accepted but intentionally ignored, see below
+    model: str | None = None,
+    provider: str | None = None,
 ) -> dict:
     """Grade one submission end-to-end.
 
@@ -1487,7 +1488,13 @@ def evaluate_one_submission(
             "answer_key_path": answer_key_path,
         }
         try:
-            evaluation = evaluate_pdf(submission_path, answer_key_path, meta)
+            evaluation = evaluate_pdf(
+                submission_path,
+                answer_key_path,
+                meta,
+                provider=(provider or "anthropic"),
+                model=model,
+            )
         except Exception as exc:  # noqa: BLE001
             log.exception("evaluate_pdf failed: %s", exc)
             _eval_record(
@@ -1542,6 +1549,7 @@ def start_evaluation_job(
     concurrency: int = 3,
     force_reeval: bool = False,
     model: str | None = None,
+    provider: str | None = None,
 ) -> dict:
     n = len(student_ids)
     if n == 0:
@@ -1584,6 +1592,8 @@ def start_evaluation_job(
                 keys_folder_id=keys_folder_id,
                 reports_folder_id=reports_folder_id,
                 force_reeval=force_reeval,
+                model=model,
+                provider=provider,
             )
         except GenerationCancelled:
             _eval_record(coursework_id, sid, "queued", status="cancelled")

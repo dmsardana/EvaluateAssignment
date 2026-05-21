@@ -165,6 +165,10 @@ class EvaluateRequest(BaseModel):
     concurrency: Optional[int] = 3
     force_reeval: Optional[bool] = False
     model: Optional[str] = None
+    # Phase 2 LLM routing — one of "anthropic", "gemini", "openai".
+    # None ⇒ anthropic (back-compat with callers that pre-date the
+    # model picker).
+    provider: Optional[str] = None
 
     @field_validator("concurrency")
     @classmethod

@@ -116,6 +116,9 @@ export interface EvaluateRequestBody {
   concurrency?: number;
   force_reeval?: boolean;
   model?: string;
+  // Phase 2 LLM routing — one of "anthropic" | "gemini" | "openai".
+  // Optional; backend defaults to "anthropic".
+  provider?: string;
 }
 
 export interface BudgetResponse {

@@ -30,8 +30,8 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
   },
   gemini: {
     label: "Gemini",
-    wired: false,
-    hint: "Add GEMINI_API_KEY in Settings · Credentials. Routing ships in Phase 2.",
+    wired: true,
+    hint: "Requires GEMINI_API_KEY (Settings · Credentials).",
     models: [
       { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
@@ -41,8 +41,8 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
   },
   openai: {
     label: "OpenAI",
-    wired: false,
-    hint: "Add OPENAI_API_KEY in Settings · Credentials. Routing ships in Phase 2.",
+    wired: true,
+    hint: "Requires OPENAI_API_KEY (Settings · Credentials).",
     models: [
       { id: "gpt-4o", label: "GPT-4o" },
       { id: "gpt-4o-mini", label: "GPT-4o mini" },

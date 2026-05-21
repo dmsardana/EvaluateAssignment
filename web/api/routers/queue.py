@@ -150,7 +150,8 @@ def start_evaluations(
             keys_folder_id=keys_folder_id,
             concurrency=body.concurrency or 3,
             force_reeval=bool(body.force_reeval),
-            model=body.model,  # service deliberately ignores model
+            model=body.model,
+            provider=body.provider,
         )
     except queue_svc.BudgetExceeded as exc:
         raise HTTPException(status_code=402, detail=str(exc))

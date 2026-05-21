@@ -165,7 +165,44 @@ def aggregate_dim_pct(questions: list, dim_key: str) -> int:
 
 
 def pick_model(asgn_type: str) -> str:
+    """Anthropic per-tier default (legacy; preserved for back-compat callers)."""
     return os.getenv(f"EVALUATOR_MODEL_{asgn_type}", "claude-sonnet-4-6")
+
+
+def _default_model_for(provider: str, asgn_type: str) -> str:
+    """Per-provider, per-tier default when the caller doesn't pass a model.
+
+    Operators can override each via env vars:
+        EVALUATOR_MODEL_<TYPE>           (anthropic)
+        EVALUATOR_GEMINI_MODEL_<TYPE>    (gemini)
+        EVALUATOR_OPENAI_MODEL_<TYPE>    (openai)
+    """
+    if provider == "anthropic":
+        return os.getenv(f"EVALUATOR_MODEL_{asgn_type}", "claude-sonnet-4-6")
+    if provider == "gemini":
+        return os.getenv(f"EVALUATOR_GEMINI_MODEL_{asgn_type}", "gemini-2.5-pro")
+    if provider == "openai":
+        return os.getenv(f"EVALUATOR_OPENAI_MODEL_{asgn_type}", "gpt-4o")
+    # Unknown provider — let the caller surface the issue.
+    return "claude-sonnet-4-6"
+
+
+def _user_instruction(meta: dict) -> str:
+    return (
+        f"Evaluate this submission rigorously and return the full JSON.\n"
+        f"Student: {meta['student_name']}\n"
+        f"Assignment: {meta['assignment_type']} {meta['assignment_code']}\n"
+        f"Today: {date.today().isoformat()}\n"
+    )
+
+
+def _strip_json_fences(raw: str) -> str:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return raw.strip()
 
 
 def make_tracking_id(asgn_type: str, asgn_code: str, student_name: str, eval_date: str) -> str:
@@ -175,13 +212,15 @@ def make_tracking_id(asgn_type: str, asgn_code: str, student_name: str, eval_dat
     return f"TS-{asgn_type}-{asgn_code}-{yyyymmdd}-{initials}-001"
 
 
-def evaluate(submission_path: str, answer_key_path: str, meta: dict) -> dict:
+# ─────────────────────────────────────────────────────────────────────
+# Provider dispatch — each call function returns raw JSON text. The
+# top-level evaluate() then parses + enriches identically across
+# providers so the report renderer sees a uniform shape.
+# ─────────────────────────────────────────────────────────────────────
+
+
+def _call_anthropic_vision(key_b64: str, sub_b64: str, meta: dict, model: str) -> str:
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    model = pick_model(meta["assignment_type"])
-
-    key_b64 = encode_pdf(answer_key_path)
-    sub_b64 = encode_pdf(submission_path)
-
     message = client.messages.create(
         model=model,
         max_tokens=16000,
@@ -195,24 +234,145 @@ def evaluate(submission_path: str, answer_key_path: str, meta: dict) -> dict:
                 {"type": "document",
                  "source": {"type": "base64", "media_type": "application/pdf", "data": sub_b64},
                  "title": "Document 2: Student Submission"},
-                {"type": "text",
-                 "text": (
-                    f"Evaluate this submission rigorously and return the full JSON.\n"
-                    f"Student: {meta['student_name']}\n"
-                    f"Assignment: {meta['assignment_type']} {meta['assignment_code']}\n"
-                    f"Today: {date.today().isoformat()}\n"
-                 )},
+                {"type": "text", "text": _user_instruction(meta)},
             ],
         }],
     )
+    return message.content[0].text
 
-    raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```", 2)[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
-    parsed = json.loads(raw)
+
+def _call_gemini_vision(
+    key_bytes: bytes, sub_bytes: bytes, meta: dict, model: str
+) -> str:
+    # Lazy import — Phase-2 SDK; not required for Anthropic-only installs.
+    try:
+        from google import genai
+        from google.genai import types as gtypes
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            "google-genai not installed. Run "
+            "`pip install -r requirements.txt` (or `pip install google-genai`) "
+            "to enable Gemini routing."
+        ) from exc
+
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is not set. Add it via Settings · Credentials "
+            "or set it directly in .env."
+        )
+
+    client = genai.Client(api_key=key)
+    response = client.models.generate_content(
+        model=model,
+        contents=[
+            gtypes.Part.from_bytes(data=key_bytes, mime_type="application/pdf"),
+            gtypes.Part.from_bytes(data=sub_bytes, mime_type="application/pdf"),
+            _user_instruction(meta),
+        ],
+        config=gtypes.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            response_mime_type="application/json",
+            max_output_tokens=16000,
+        ),
+    )
+    return response.text or ""
+
+
+def _call_openai_vision(
+    key_b64: str, sub_b64: str, meta: dict, model: str
+) -> str:
+    try:
+        from openai import OpenAI
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            "openai not installed. Run `pip install -r requirements.txt` "
+            "(or `pip install openai`) to enable OpenAI routing."
+        ) from exc
+
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not set. Add it via Settings · Credentials "
+            "or set it directly in .env."
+        )
+
+    client = OpenAI(api_key=key)
+    response = client.responses.create(
+        model=model,
+        input=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_file",
+                        "filename": "answer_key.pdf",
+                        "file_data": f"data:application/pdf;base64,{key_b64}",
+                    },
+                    {
+                        "type": "input_file",
+                        "filename": "submission.pdf",
+                        "file_data": f"data:application/pdf;base64,{sub_b64}",
+                    },
+                    {"type": "input_text", "text": _user_instruction(meta)},
+                ],
+            },
+        ],
+        max_output_tokens=16000,
+        text={"format": {"type": "json_object"}},
+    )
+    # Newer SDKs expose .output_text as a convenience; fall back to
+    # walking .output[*].content[*].text for older versions.
+    raw = getattr(response, "output_text", None)
+    if raw:
+        return raw
+    out: list[str] = []
+    for item in getattr(response, "output", []) or []:
+        for part in getattr(item, "content", []) or []:
+            text = getattr(part, "text", None)
+            if text:
+                out.append(text)
+    return "".join(out)
+
+
+def evaluate(
+    submission_path: str,
+    answer_key_path: str,
+    meta: dict,
+    provider: str = "anthropic",
+    model: str | None = None,
+) -> dict:
+    """Run the vision-based evaluation against the chosen provider.
+
+    Backward compatible: legacy callers that don't pass provider/model
+    keep getting the Anthropic per-tier default model. The frontend
+    model-picker (Phase 2) is the new producer of (provider, model).
+    """
+    provider = (provider or "anthropic").lower()
+    model = (model or "").strip() or _default_model_for(provider, meta["assignment_type"])
+
+    if provider == "anthropic":
+        key_b64 = encode_pdf(answer_key_path)
+        sub_b64 = encode_pdf(submission_path)
+        raw_text = _call_anthropic_vision(key_b64, sub_b64, meta, model)
+    elif provider == "gemini":
+        with open(answer_key_path, "rb") as f:
+            key_bytes = f.read()
+        with open(submission_path, "rb") as f:
+            sub_bytes = f.read()
+        raw_text = _call_gemini_vision(key_bytes, sub_bytes, meta, model)
+    elif provider == "openai":
+        key_b64 = encode_pdf(answer_key_path)
+        sub_b64 = encode_pdf(submission_path)
+        raw_text = _call_openai_vision(key_b64, sub_b64, meta, model)
+    else:
+        raise ValueError(
+            f"Unknown LLM provider {provider!r}; expected one of "
+            "'anthropic', 'gemini', 'openai'."
+        )
+
+    parsed = json.loads(_strip_json_fences(raw_text))
 
     # Recompute weighted scores for consistency
     total_earned = 0.0

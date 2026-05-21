@@ -461,24 +461,27 @@ function SubmissionsBody({
 
   async function evaluateSelected(force: boolean) {
     if (selected.size === 0) return;
-    // Backend currently ignores `model` and crashes with "unexpected keyword
-    // argument" — see plan file. Selection still persists for when backend
-    // routes it.
-    selectionFromStored(detail.coursework_id, detail.model);
+    // Phase 2: the backend now honors {provider, model} from the
+    // ModelPicker's persisted selection.
+    const sel = selectionFromStored(detail.coursework_id, detail.model);
     await run("evalSelected", () =>
       api.evaluate(detail.coursework_id, {
         student_ids: [...selected],
         force_reeval: force,
+        provider: sel.provider,
+        model: sel.model,
       }),
     );
   }
 
   async function evaluateAll(force: boolean) {
-    selectionFromStored(detail.coursework_id, detail.model);
+    const sel = selectionFromStored(detail.coursework_id, detail.model);
     await run("evalAll", () =>
       api.evaluate(detail.coursework_id, {
         student_ids: subs.map((s) => s.student_id),
         force_reeval: force,
+        provider: sel.provider,
+        model: sel.model,
       }),
     );
   }
@@ -635,13 +638,15 @@ function SubmissionRow({
   }
 
   async function evaluateOne(force: boolean) {
-    // Backend currently ignores `model`; see plan file. Touch the stored
-    // selection so its key keeps tracking the operator's choice.
-    selectionFromStored(courseworkId, defaultModel);
+    // Phase 2: backend now honors {provider, model} from the ModelPicker's
+    // persisted selection.
+    const sel = selectionFromStored(courseworkId, defaultModel);
     await run("eval", () =>
       api.evaluate(courseworkId, {
         student_ids: [sub.student_id],
         force_reeval: force,
+        provider: sel.provider,
+        model: sel.model,
       }),
     );
   }
