@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+
+// Scope B runs auth-free on localhost. Replace this no-op with next-auth's
+// signOut() when auth is reintroduced.
+const signOut = (_: { callbackUrl: string }) => {
+  console.warn("signOut() noop — auth not wired in Scope B");
+};
 
 interface NavItem {
   href: string;

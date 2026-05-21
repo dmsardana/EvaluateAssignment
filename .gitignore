@@ -43,3 +43,20 @@ tectonic
 # Plan / scratch / output captures
 *.tmp
 *.bak
+node_modules
+
+# Web app — build cache, auth secrets, local SQLite auth DB. Never commit.
+web/app/.next/
+web/app/.env.local
+*.local
+web/app/auth.db
+web/app/auth.db-shm
+web/app/auth.db-wal
+
+# FastAPI runtime scratch — regenerable.
+web/api/_eval_cache/
+web/api/_tmp/
+
+# Auto-generated prompt logs from the UserPromptSubmit hook. Personal
+# audit trail; not part of the codebase.
+docs/prompts/

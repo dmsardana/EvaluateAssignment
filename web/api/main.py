@@ -90,3 +90,31 @@ def budget():
     from web.api.deps import get_drive, get_reports_folder_id
     from web.api.services.queue import get_budget_snapshot
     return get_budget_snapshot(get_drive(), get_reports_folder_id())
+
+
+@app.get("/api/distribution")
+def distribution():
+    """Weekly band distribution backing the workspace snapshot."""
+    from web.api.deps import get_drive, get_reports_folder_id
+    from web.api.services.queue import get_distribution
+    return get_distribution(get_drive(), get_reports_folder_id())
+
+
+@app.get("/api/stats")
+def stats():
+    """Top-of-console stats — awaiting keys, queued submissions, est. cost."""
+    from web.api.deps import (
+        get_classroom,
+        get_course_ids,
+        get_drive,
+        get_keys_folder_id,
+        get_reports_folder_id,
+    )
+    from web.api.services.queue import get_stats
+    return get_stats(
+        classroom=get_classroom(),
+        drive=get_drive(),
+        keys_folder_id=get_keys_folder_id(),
+        reports_folder_id=get_reports_folder_id(),
+        course_ids=get_course_ids(),
+    )

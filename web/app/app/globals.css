@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Ink palette — dark theme, neutral with a faint cool cast. */
+  --ink-5: #18181b;
+  --ink-10: #27272a;
+  --ink-40: #71717a;
+  --ink-80: #d4d4d8;
+  --ink-100: #fafafa;
+
+  /* Brand */
+  --ts-red: #f87171;
+  --ts-red-soft: rgba(248, 113, 113, 0.32);
+  --ts-red-glow: rgba(248, 113, 113, 0.28);
+
+  /* Accents — used by pill states, focus rings, gradients */
+  --lime: #bef264;
+  --magenta: #ec4899;
+  --cyan: #22d3ee;
+  --violet: #8b5cf6;
+
+  /* Font stacks. Editorial display serif paired with a clean sans + crisp mono. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Apple Garamond", "Baskerville",
+    "Times New Roman", "Droid Serif", Times, serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Mono",
+    Menlo, monospace;
+}
+
+html,
+body {
+  background: #0a0a0b;
+  color: var(--ink-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle atmospheric wash — brand red bleeds from top-left, fades to nothing. */
+body {
+  background-image:
+    radial-gradient(
+      900px 600px at -10% -20%,
+      rgba(248, 113, 113, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      700px 500px at 110% 110%,
+      rgba(139, 92, 246, 0.06),
+      transparent 55%
+    );
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Glass surface — referenced by future top-bar; safe to leave defined. */
+.glass-strong {
+  background: rgba(15, 15, 18, 0.72);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+}
+
+::selection {
+  background: var(--ts-red-soft);
+  color: var(--ink-100);
+}

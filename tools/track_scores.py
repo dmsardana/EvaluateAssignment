@@ -30,6 +30,14 @@ CSV_HEADER = [
     "percentage",
     "concept_pct", "approach_pct", "steps_pct", "accuracy_pct", "clarity_pct",
     "qualifies_for",
+    # Extended fields written by the queue service's link/unlink flow + the
+    # API's evaluation pipeline. Preserved across track() rewrites.
+    "assignment_title", "coursework_id",
+    "report_drive_id", "report_url",
+    "linked_at", "unlinked_at",
+    "shared_with_email", "drive_permission_id",
+    "assigned_grade", "eval_duration_seconds",
+    "graded_earned", "graded_max",
 ]
 
 
@@ -92,7 +100,10 @@ def load_csv(drive, folder_id: str) -> tuple[str | None, list[dict]]:
 
 def save_csv(drive, folder_id: str, file_id: str | None, rows: list[dict]):
     buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=CSV_HEADER)
+    # `extrasaction='ignore'` lets unexpected fields on rows pass through
+    # without crashing — handy when older or newer columns leak into the
+    # CSV from out-of-band edits.
+    writer = csv.DictWriter(buf, fieldnames=CSV_HEADER, extrasaction="ignore")
     writer.writeheader()
     writer.writerows(rows)
     content = buf.getvalue().encode("utf-8")
