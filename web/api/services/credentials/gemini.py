@@ -10,12 +10,23 @@ is enough for a health probe.
 """
 from __future__ import annotations
 
-import json
+import json  # noqa: F401  (kept for forward-compat probe parsing)
 import logging
 import os
+import ssl
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
+
+# macOS Python.org installer doesn't ship a system CA bundle by default,
+# so stdlib urllib fails with CERTIFICATE_VERIFY_FAILED. certifi is
+# already a transitive dep (httpx ← anthropic) and provides the
+# bundled CA chain Mozilla maintains.
+try:
+    import certifi
+    _SSL_CONTEXT: ssl.SSLContext | None = ssl.create_default_context(cafile=certifi.where())
+except ImportError:  # pragma: no cover — defensive
+    _SSL_CONTEXT = None
 
 from web.api.services.credentials import (
     CredentialBroken,
@@ -48,7 +59,9 @@ class GeminiCredentialHandle:
 
         req = urllib.request.Request(f"{PROBE_URL}?key={key}")
         try:
-            with urllib.request.urlopen(req, timeout=PROBE_TIMEOUT_SEC) as resp:
+            with urllib.request.urlopen(
+                req, timeout=PROBE_TIMEOUT_SEC, context=_SSL_CONTEXT
+            ) as resp:
                 if resp.status == 200:
                     return self._cache(Status.OK, None)
                 return self._cache(Status.UNKNOWN, f"HTTP {resp.status}")

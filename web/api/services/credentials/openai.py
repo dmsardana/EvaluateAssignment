@@ -11,9 +11,17 @@ from __future__ import annotations
 
 import logging
 import os
+import ssl
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
+
+# See gemini.py — same macOS Python.org SSL caveat applies.
+try:
+    import certifi
+    _SSL_CONTEXT: ssl.SSLContext | None = ssl.create_default_context(cafile=certifi.where())
+except ImportError:  # pragma: no cover
+    _SSL_CONTEXT = None
 
 from web.api.services.credentials import (
     CredentialBroken,
@@ -48,7 +56,9 @@ class OpenAICredentialHandle:
             PROBE_URL, headers={"Authorization": f"Bearer {key}"}
         )
         try:
-            with urllib.request.urlopen(req, timeout=PROBE_TIMEOUT_SEC) as resp:
+            with urllib.request.urlopen(
+                req, timeout=PROBE_TIMEOUT_SEC, context=_SSL_CONTEXT
+            ) as resp:
                 if resp.status == 200:
                     return self._cache(Status.OK, None)
                 return self._cache(Status.UNKNOWN, f"HTTP {resp.status}")

@@ -4,14 +4,24 @@ import { useState } from "react";
 
 import { CredentialCard } from "@/components/credentials-cards";
 import {
+  CredentialStatus,
   updateAnthropicKey,
   updateGeminiKey,
   updateOpenaiKey,
   useCredentials,
 } from "@/lib/credentials";
 
+// Credentials that have their own key-update form below — we hide
+// their generic status card to avoid duplicate sections. Their status
+// chip is rendered inline by ProviderKeyForm.
+const FORMED_CREDS = new Set(["anthropic_api", "gemini_api", "openai_api"]);
+
 export default function CredentialsPage() {
   const { data, refresh } = useCredentials();
+
+  function statusOf(name: string): CredentialStatus | undefined {
+    return data?.find((c) => c.name === name)?.status;
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -23,9 +33,11 @@ export default function CredentialsPage() {
       </header>
 
       <div className="space-y-3">
-        {data?.map((c) => (
-          <CredentialCard key={c.name} cred={c} onRefresh={refresh} />
-        ))}
+        {data
+          ?.filter((c) => !FORMED_CREDS.has(c.name))
+          .map((c) => (
+            <CredentialCard key={c.name} cred={c} onRefresh={refresh} />
+          ))}
       </div>
 
       <ProviderKeyForm
@@ -34,6 +46,7 @@ export default function CredentialsPage() {
         placeholder="sk-ant-…"
         onSave={updateAnthropicKey}
         onSaved={refresh}
+        currentStatus={statusOf("anthropic_api")}
       />
 
       <ProviderKeyForm
@@ -42,6 +55,7 @@ export default function CredentialsPage() {
         placeholder="AIza…"
         onSave={updateGeminiKey}
         onSaved={refresh}
+        currentStatus={statusOf("gemini_api")}
         secondary
       />
 
@@ -51,6 +65,7 @@ export default function CredentialsPage() {
         placeholder="sk-…"
         onSave={updateOpenaiKey}
         onSaved={refresh}
+        currentStatus={statusOf("openai_api")}
         secondary
       />
     </div>
@@ -63,6 +78,7 @@ function ProviderKeyForm({
   placeholder,
   onSave,
   onSaved,
+  currentStatus,
   secondary,
 }: {
   title: string;
@@ -70,6 +86,7 @@ function ProviderKeyForm({
   placeholder: string;
   onSave: (key: string) => Promise<void>;
   onSaved: () => void;
+  currentStatus?: CredentialStatus;
   secondary?: boolean;
 }) {
   const [draft, setDraft] = useState("");
@@ -95,7 +112,10 @@ function ProviderKeyForm({
 
   return (
     <section className="rounded-md border border-ink-10 bg-ink-5 p-4">
-      <h2 className="text-sm font-medium text-ink-100">Update {title}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-medium text-ink-100">Update {title}</h2>
+        {currentStatus && <StatusChip status={currentStatus} />}
+      </div>
       <p className="mt-1 text-xs text-ink-40">
         Validated against the provider before being written to{" "}
         <span className="font-mono">.env</span> as{" "}
@@ -126,5 +146,21 @@ function ProviderKeyForm({
       {error && <div className="mt-2 text-xs text-[var(--ts-red)]">{error}</div>}
       {saved && <div className="mt-2 text-xs text-[var(--lime)]">Saved.</div>}
     </section>
+  );
+}
+
+function StatusChip({ status }: { status: CredentialStatus }) {
+  const tone =
+    status === "OK"
+      ? "border-[rgba(190,242,100,0.4)] bg-[rgba(190,242,100,0.12)] text-[var(--lime)]"
+      : status === "MISSING"
+        ? "border-ink-10 bg-ink-5 text-ink-40"
+        : "border-[rgba(248,113,113,0.4)] bg-[rgba(248,113,113,0.12)] text-[var(--ts-red)]";
+  return (
+    <span
+      className={`rounded-md border px-2 py-[2px] font-mono text-[10px] uppercase tracking-[0.18em] ${tone}`}
+    >
+      {status}
+    </span>
   );
 }
