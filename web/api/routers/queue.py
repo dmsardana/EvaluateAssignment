@@ -62,7 +62,9 @@ def _drive_view_url(drive_id: str | None) -> str | None:
 
 
 def _merge_scores_into_submissions(
-    submissions: list[dict], scores_rows: list[dict] | None
+    submissions: list[dict],
+    scores_rows: list[dict] | None,
+    report_index: dict[str, str] | None = None,
 ) -> list[dict]:
     """Augment each Classroom submission with graded/report info from scores.
 
@@ -70,6 +72,12 @@ def _merge_scores_into_submissions(
     submissions where every ``graded_*`` and ``report_*`` field is None,
     which makes the drawer perpetually show "Idle" and hides the View
     Report icon even after a successful evaluation.
+
+    ``report_index`` is a {filename.lower(): drive_id} map built by
+    ``services.queue._index_reports``. When a scores row predates the
+    eval-time ``report_drive_id`` write-back, we fall back to looking
+    up the report PDF by its filename pattern
+    ``{CamelStudent}_{CODE}_{DATE}_Report.pdf``.
     """
     if not scores_rows:
         return submissions
@@ -111,6 +119,12 @@ def _merge_scores_into_submissions(
         if graded_at:
             out["graded_at"] = graded_at
         drive_id = row.get("report_drive_id") or None
+        # Fallback: legacy rows (pre-eval-time write-back) don't carry
+        # report_drive_id. Look the PDF up in the reports folder by
+        # filename pattern so the View Report icon still renders for
+        # historical evals.
+        if not drive_id and report_index:
+            drive_id, _view_url = queue_svc._match_report(report_index, row)
         if drive_id:
             out["report_drive_id"] = drive_id
             out["report_url"] = row.get("report_url") or _drive_view_url(drive_id)
@@ -126,11 +140,13 @@ def _to_detail(
     state_entry: dict,
     classroom_data: dict,
     scores_rows: list[dict] | None = None,
+    report_index: dict[str, str] | None = None,
 ) -> dict:
     """Merge stored AK state with live Classroom data into a QueueDetail payload."""
     submissions = _merge_scores_into_submissions(
         list(classroom_data.get("submissions") or []),
         scores_rows,
+        report_index,
     )
     classroom_data = {**classroom_data, "submissions": submissions}
     return {
@@ -208,8 +224,15 @@ def get_item(
         assignment_type=entry.get("assignment_type", ""),
         assignment_code=entry.get("assignment_code", ""),
     )
+    # Filename-pattern index of report PDFs on Drive — fallback so the
+    # View Report icon resolves for legacy scores rows that don't carry
+    # `report_drive_id` (pre-eval-write-back). Cached internally.
+    report_index = queue_svc._index_reports(drive, reports_folder_id)
     payload = _to_detail(
-        {"coursework_id": coursework_id, **entry}, classroom_data, scores_rows
+        {"coursework_id": coursework_id, **entry},
+        classroom_data,
+        scores_rows,
+        report_index,
     )
     return QueueDetail.model_validate(payload)
 
