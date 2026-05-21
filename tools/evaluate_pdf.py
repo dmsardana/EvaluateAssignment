@@ -48,7 +48,25 @@ Apply the **Standard Subjective Rubric** to every question:
 | Numerical Accuracy       | 10%    | NA   |
 | Presentation & Clarity   | 10%    | PR   |
 
-**Per-dimension score is strictly one of: 0, 0.5, 1**  (0 = absent, 0.5 = partial, 1 = full).
+**Per-dimension scoring rules (READ CAREFULLY — these are non-negotiable):**
+
+- **CU, AM, SS, PR** — score is a **continuous real value in [0, 1] rounded to 2 decimals**.
+  The full range is in play: 0.13, 0.27, 0.48, 0.62, 0.78, 0.91 are all valid.
+  - DO NOT quantize to 0, 0.5, 1 buckets.
+  - DO NOT quantize to 0.05 / 5-point steps (no 0.55, 0.60, 0.65, 0.70 pattern).
+  - DO NOT default to "round" numbers — if your honest assessment is 0.62, write 0.62 not 0.60.
+  - Calibrate against the JEE-Advanced subjective grading scale: every 0.01 difference
+    should be defensible from the student's actual working.
+
+- **NA — Numerical Accuracy — is binary per atomic numerical claim**, NOT continuous:
+  - **Single-claim question** (one final answer / one number / one set):
+    NA = **1.0 if exactly right, 0.0 if wrong**. No "small error" partial credit.
+  - **Multi-part question** (e.g. domain + range; α + β; multiple bounds):
+    NA = correct_parts / total_parts. So 1 of 2 = 0.5, 2 of 3 ≈ 0.67.
+    The NA comment MUST declare which parts were treated as atomic and which were right.
+  - Sign flips, transcription slips, wrong stated sets, branch errors → NA = 0.0.
+  - Right process + wrong number costs NA (binary), not SS.
+
 **Per-question weighted score = 0.40·CU + 0.20·AM + 0.20·SS + 0.10·NA + 0.10·PR  ∈ [0,1].**
 
 You must return a single JSON object (no markdown fences, no commentary outside JSON) with the schema:

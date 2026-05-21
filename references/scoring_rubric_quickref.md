@@ -6,7 +6,11 @@
 Q = 0.40*CU + 0.20*AM + 0.20*SS + 0.10*NA + 0.10*PR
 ```
 
-Each dimension scored 0, 0.5, or 1. Max per question: 1.00.
+**CU, AM, SS, PR** are scored continuously on `[0, 1]` rounded to 2 decimals — full range is in play (0.13, 0.27, 0.48, 0.62, 0.78, 0.91 are all valid). Do not quantize to 0/0.5/1 buckets or to 0.05 steps.
+
+**NA** is binary per atomic numerical claim — `1.0` if the answer is exactly right, `0.0` if wrong. Multi-part questions: `correct_parts / total_parts`.
+
+Max per question: `1.00`.
 
 ## The 5 dimensions and how to grade them
 
