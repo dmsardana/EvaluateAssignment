@@ -60,3 +60,6 @@ web/api/_tmp/
 # Auto-generated prompt logs from the UserPromptSubmit hook. Personal
 # audit trail; not part of the codebase.
 docs/prompts/
+
+# TypeScript build info — regenerable
+web/app/tsconfig.tsbuildinfo
