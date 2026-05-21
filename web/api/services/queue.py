@@ -976,6 +976,31 @@ def _read_scores_csv(drive, reports_folder_id: str | None) -> list[dict]:
     return list(rows or [])
 
 
+def scores_for_assignment(
+    drive,
+    reports_folder_id: str | None,
+    assignment_type: str,
+    assignment_code: str,
+) -> list[dict]:
+    """Return scores rows belonging to a single (type, code) assignment.
+
+    Used by the queue-detail endpoint to merge graded results into the
+    raw Classroom submissions, so the per-student row in the drawer can
+    show ``graded_percentage``, ``report_url``, ``linked_at``, etc.
+    """
+    atype = (assignment_type or "").strip()
+    acode = (assignment_code or "").strip()
+    if not atype or not acode:
+        return []
+    out: list[dict] = []
+    for r in _read_scores_csv(drive, reports_folder_id):
+        if (r.get("assignment_type") or "").strip() == atype and (
+            r.get("assignment_code") or ""
+        ).strip() == acode:
+            out.append(r)
+    return out
+
+
 def _band_for(pct: float | int | None) -> str:
     try:
         p = int(pct) if pct is not None else 0
@@ -1519,6 +1544,27 @@ def evaluate_one_submission(
 
     _eval_record(coursework_id, student_id, "tracking")
     track_score(evaluation, reports_folder_id)
+
+    # track_score(build_row) doesn't include the freshly-uploaded report
+    # location (legacy shape kept for back-compat with older callers).
+    # Patch it onto the row now so /api/queue/{id} can surface the View
+    # Report icon and the share-link flow has a target.
+    if drive_id:
+        try:
+            _update_scores_row(
+                drive,
+                reports_folder_id,
+                student_id=student_id,
+                assignment_type=asgn_type,
+                assignment_code=asgn_code,
+                patch={
+                    "report_drive_id": drive_id,
+                    "report_url": _drive_view_url(drive_id),
+                    "coursework_id": coursework_id,
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            log.warning("scores row patch (report fields) failed: %s", exc)
 
     pct = float((evaluation.get("aggregate") or {}).get("percentage") or 0.0)
     _grade_from_percentage(pct, max_points)

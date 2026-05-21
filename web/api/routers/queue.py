@@ -55,8 +55,84 @@ def _max_points_for(entry: dict) -> float | None:
         return None
 
 
-def _to_detail(state_entry: dict, classroom_data: dict) -> dict:
+def _drive_view_url(drive_id: str | None) -> str | None:
+    if not drive_id:
+        return None
+    return f"https://drive.google.com/file/d/{drive_id}/view"
+
+
+def _merge_scores_into_submissions(
+    submissions: list[dict], scores_rows: list[dict] | None
+) -> list[dict]:
+    """Augment each Classroom submission with graded/report info from scores.
+
+    Without this merge the queue-detail endpoint returns raw Classroom
+    submissions where every ``graded_*`` and ``report_*`` field is None,
+    which makes the drawer perpetually show "Idle" and hides the View
+    Report icon even after a successful evaluation.
+    """
+    if not scores_rows:
+        return submissions
+    by_sid: dict[str, dict] = {}
+    for r in scores_rows:
+        sid = (r.get("student_id") or "").strip()
+        if sid and sid not in by_sid:
+            by_sid[sid] = r
+
+    def _f(value: object) -> float | None:
+        try:
+            v = float(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return None
+        return v if v != 0.0 or value not in ("", None) else v
+
+    merged: list[dict] = []
+    for sub in submissions:
+        sid = (sub.get("student_id") or "").strip()
+        row = by_sid.get(sid)
+        if not row:
+            merged.append(sub)
+            continue
+        out = {**sub}
+        pct = _f(row.get("percentage"))
+        if pct is not None:
+            out["graded_percentage"] = pct
+        earned = _f(row.get("graded_earned") or row.get("earned_score"))
+        if earned is not None:
+            out["graded_earned"] = earned
+        max_score = _f(row.get("graded_max") or row.get("max_score"))
+        if max_score is not None:
+            out["graded_max"] = max_score
+        graded_at = (
+            row.get("eval_completed_at")
+            or row.get("evaluation_date")
+            or row.get("linked_at")
+        )
+        if graded_at:
+            out["graded_at"] = graded_at
+        drive_id = row.get("report_drive_id") or None
+        if drive_id:
+            out["report_drive_id"] = drive_id
+            out["report_url"] = row.get("report_url") or _drive_view_url(drive_id)
+        if row.get("linked_at"):
+            out["linked_at"] = row["linked_at"]
+        if row.get("unlinked_at"):
+            out["unlinked_at"] = row["unlinked_at"]
+        merged.append(out)
+    return merged
+
+
+def _to_detail(
+    state_entry: dict,
+    classroom_data: dict,
+    scores_rows: list[dict] | None = None,
+) -> dict:
     """Merge stored AK state with live Classroom data into a QueueDetail payload."""
+    submissions = _merge_scores_into_submissions(
+        list(classroom_data.get("submissions") or []),
+        scores_rows,
+    )
+    classroom_data = {**classroom_data, "submissions": submissions}
     return {
         "coursework_id": state_entry.get("coursework_id", ""),
         "course_id": state_entry.get("course_id", ""),
@@ -121,11 +197,20 @@ def get_item(
     classroom=Depends(get_classroom),
     drive=Depends(get_drive),
     keys_folder_id: str = Depends(get_keys_folder_id),
+    reports_folder_id: str = Depends(get_reports_folder_id),
 ) -> QueueDetail:
     entry = _resolve_assignment(drive, keys_folder_id, coursework_id)
     course_id = entry.get("course_id", "")
     classroom_data = queue_svc.classroom_detail(classroom, course_id, coursework_id)
-    payload = _to_detail({"coursework_id": coursework_id, **entry}, classroom_data)
+    scores_rows = queue_svc.scores_for_assignment(
+        drive=drive,
+        reports_folder_id=reports_folder_id,
+        assignment_type=entry.get("assignment_type", ""),
+        assignment_code=entry.get("assignment_code", ""),
+    )
+    payload = _to_detail(
+        {"coursework_id": coursework_id, **entry}, classroom_data, scores_rows
+    )
     return QueueDetail.model_validate(payload)
 
 

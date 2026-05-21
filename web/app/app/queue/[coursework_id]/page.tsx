@@ -739,49 +739,65 @@ function SubmissionRow({
       </Td>
       <Td className="text-right">
         <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <RowAction
-            label={isGraded ? "Re-eval" : "Evaluate"}
-            tone={isGraded ? "default" : "lime"}
-            busy={busy === "eval"}
-            onClick={() => evaluateOne(isGraded)}
-          />
-          {viewUrl && (
-            <a
-              href={viewUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded border border-ink-10 bg-ink-5 px-2 py-[3px] font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-100 hover:border-[rgba(34,211,238,0.4)]"
+          {/* Ungraded students: prominent Evaluate. Graded students:
+              small Refresh icon — bare click re-renders from cached
+              eval JSON (no LLM spend); Shift+click forces a fresh
+              LLM call. */}
+          {!isGraded ? (
+            <RowAction
+              label="Evaluate"
+              tone="lime"
+              busy={busy === "eval"}
+              onClick={() => evaluateOne(false)}
+            />
+          ) : (
+            <IconButton
+              title="Refresh report (re-render from cached evaluation) · Shift-click to re-evaluate with the selected LLM"
+              busy={busy === "eval"}
+              onClick={(e) => evaluateOne(e.shiftKey)}
             >
-              View Report ↗
-            </a>
+              <RefreshIcon />
+            </IconButton>
           )}
-          {isGraded ? (
-            <button
-              type="button"
-              disabled={busy !== null}
-              onClick={() =>
+
+          {viewUrl && (
+            <IconLink
+              href={viewUrl}
+              title="View Report"
+              ariaLabel="View Report"
+            >
+              <EyeIcon />
+            </IconLink>
+          )}
+
+          {/* Share/revoke link toggle. Backend handles email send +
+              Drive view-only lockdown on link, and permission revoke
+              on unlink. The icon's tint reflects current state. */}
+          <IconButton
+            title={
+              subAny.linked_at && !subAny.unlinked_at
+                ? "Revoke shared link"
+                : "Share report link with student (view-only)"
+            }
+            busy={busy === "link" || busy === "unlink"}
+            tone={subAny.linked_at && !subAny.unlinked_at ? "active" : "default"}
+            disabled={!isGraded}
+            onClick={() => {
+              const isShared =
+                subAny.linked_at && !subAny.unlinked_at;
+              if (isShared) {
                 run("unlink", () =>
                   api.unlinkSubmission(courseworkId, sub.student_id),
-                )
-              }
-              className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-40 hover:text-[var(--ts-red)]"
-            >
-              {busy === "unlink" ? "…" : "Unlink Report"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy !== null}
-              onClick={() =>
+                );
+              } else {
                 run("link", () =>
                   api.linkSubmission(courseworkId, sub.student_id),
-                )
+                );
               }
-              className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-40 hover:text-[var(--lime)]"
-            >
-              {busy === "link" ? "…" : "Link Report"}
-            </button>
-          )}
+            }}
+          >
+            <LinkIcon />
+          </IconButton>
         </div>
         {err && (
           <div className="mt-1 text-right font-mono text-[10px] text-[var(--ts-red)]">
@@ -819,6 +835,123 @@ function RowAction({
     >
       {busy ? "…" : label}
     </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Icon buttons / icons for the per-submission row.
+// `tone="active"` lights the icon in cyan to signal a "currently on"
+// state (e.g. report link is shared). The button forwards the React
+// MouseEvent so callers can branch on shiftKey for Refresh.
+// ─────────────────────────────────────────────────────────────────────
+
+function IconButton({
+  title,
+  busy,
+  onClick,
+  children,
+  tone = "default",
+  disabled,
+}: {
+  title: string;
+  busy: boolean;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  children: React.ReactNode;
+  tone?: "default" | "active";
+  disabled?: boolean;
+}) {
+  const cls =
+    tone === "active"
+      ? "border-[rgba(34,211,238,0.4)] bg-[rgba(34,211,238,0.10)] text-[var(--cyan)]"
+      : "border-ink-10 bg-ink-5 text-ink-80 hover:text-ink-100 hover:border-[rgba(34,211,238,0.4)]";
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={busy || disabled}
+      onClick={onClick}
+      className={`grid h-7 w-7 place-items-center rounded border transition disabled:opacity-40 ${cls}`}
+    >
+      {busy ? <span className="font-mono text-[10px]">…</span> : children}
+    </button>
+  );
+}
+
+function IconLink({
+  href,
+  title,
+  ariaLabel,
+  children,
+}: {
+  href: string;
+  title: string;
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={title}
+      aria-label={ariaLabel}
+      className="grid h-7 w-7 place-items-center rounded border border-ink-10 bg-ink-5 text-ink-80 transition hover:border-[rgba(34,211,238,0.4)] hover:text-ink-100"
+    >
+      {children}
+    </a>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M2.5 8a5.5 5.5 0 0 1 9.6-3.6M13.5 8a5.5 5.5 0 0 1-9.6 3.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12.1 1.5v3h-3M3.9 14.5v-3h3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M1.5 8C2.8 5 5.2 3.3 8 3.3s5.2 1.7 6.5 4.7c-1.3 3-3.7 4.7-6.5 4.7s-5.2-1.7-6.5-4.7Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M6.5 9.5 9.5 6.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9 4l1.5-1.5a2.5 2.5 0 0 1 3.5 3.5L12.5 7.5M7 12l-1.5 1.5a2.5 2.5 0 0 1-3.5-3.5L3.5 8.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

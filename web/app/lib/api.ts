@@ -64,6 +64,14 @@ export interface Submission {
   graded_percentage: number | null;
   graded_earned: number | null;
   graded_max: number | null;
+  // Populated after a successful evaluation. The queue-detail endpoint
+  // joins the scores table into the Classroom submissions before
+  // returning, so these reflect the latest graded run.
+  graded_at?: string | null;
+  report_drive_id?: string | null;
+  report_url?: string | null;
+  linked_at?: string | null;
+  unlinked_at?: string | null;
 }
 
 export interface Material {
