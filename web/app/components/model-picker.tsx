@@ -21,8 +21,7 @@ interface ProviderInfo {
 export const PROVIDERS: Record<Provider, ProviderInfo> = {
   anthropic: {
     label: "Anthropic",
-    wired: false,
-    hint: "Backend currently uses the AK's stored model; selection is ignored.",
+    wired: true,
     models: [
       { id: "claude-opus-4-7", label: "Claude Opus 4.7" },
       { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
@@ -32,7 +31,7 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
   gemini: {
     label: "Gemini",
     wired: false,
-    hint: "Backend currently routes Anthropic only.",
+    hint: "Add GEMINI_API_KEY in Settings · Credentials. Routing ships in Phase 2.",
     models: [
       { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
@@ -43,7 +42,7 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
   openai: {
     label: "OpenAI",
     wired: false,
-    hint: "Backend currently routes Anthropic only.",
+    hint: "Add OPENAI_API_KEY in Settings · Credentials. Routing ships in Phase 2.",
     models: [
       { id: "gpt-4o", label: "GPT-4o" },
       { id: "gpt-4o-mini", label: "GPT-4o mini" },

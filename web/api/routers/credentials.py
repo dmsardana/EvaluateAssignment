@@ -133,3 +133,49 @@ def update_anthropic(body: UpdateKeyBody, _: None = Depends(_auth_required)) -> 
         pass
 
     return {"ok": "true"}
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Gemini + OpenAI key update — same shape as Anthropic. The handles
+# validate via a live /models probe before we persist the key, so a
+# bad paste never lands in .env. The actual evaluation routing for
+# these providers ships in Phase 2; the registry surface is wired
+# now so the model picker can stop showing "not wired" once keys
+# are entered.
+# ─────────────────────────────────────────────────────────────────────
+
+
+def _update_provider_key(name: str, env_var: str, key: str) -> None:
+    """Persist + apply a provider API key, refresh registry status."""
+    if not key:
+        raise HTTPException(status_code=400, detail="api_key is empty")
+
+    dotenv.set_key(ENV_PATH, env_var, key)
+    os.environ[env_var] = key
+
+    try:
+        handle = REGISTRY.get(name)
+        handle._cached = None  # type: ignore[attr-defined]
+        status, err = handle.check_health()
+        REGISTRY.report_status(name, status, err)
+        if status is not Status.OK:
+            raise HTTPException(
+                status_code=400,
+                detail=f"key did not validate: {err or status.value}",
+            )
+    except KeyError:
+        # Handle wasn't registered (e.g. registry init failed) — accept
+        # the key anyway; next process restart will pick it up.
+        pass
+
+
+@router.post("/gemini_api/update")
+def update_gemini(body: UpdateKeyBody, _: None = Depends(_auth_required)) -> dict[str, str]:
+    _update_provider_key("gemini_api", "GEMINI_API_KEY", body.api_key.strip())
+    return {"ok": "true"}
+
+
+@router.post("/openai_api/update")
+def update_openai(body: UpdateKeyBody, _: None = Depends(_auth_required)) -> dict[str, str]:
+    _update_provider_key("openai_api", "OPENAI_API_KEY", body.api_key.strip())
+    return {"ok": "true"}

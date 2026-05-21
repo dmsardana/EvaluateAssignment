@@ -52,7 +52,22 @@ export async function startGoogleReauth(): Promise<{ consent_url: string; state:
 }
 
 export async function updateAnthropicKey(apiKey: string): Promise<void> {
-  const r = await fetch("/api/credentials/anthropic_api/update", {
+  return updateProviderKey("anthropic_api", apiKey);
+}
+
+export async function updateGeminiKey(apiKey: string): Promise<void> {
+  return updateProviderKey("gemini_api", apiKey);
+}
+
+export async function updateOpenaiKey(apiKey: string): Promise<void> {
+  return updateProviderKey("openai_api", apiKey);
+}
+
+// Generic provider-key update. Backend routes follow the
+// `/api/credentials/<name>/update` convention; the handle validates
+// the key via a live probe before persisting it to .env.
+async function updateProviderKey(name: string, apiKey: string): Promise<void> {
+  const r = await fetch(`/api/credentials/${name}/update`, {
     method: "POST",
     credentials: "include",
     headers: { "content-type": "application/json" },

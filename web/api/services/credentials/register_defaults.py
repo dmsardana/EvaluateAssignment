@@ -24,6 +24,14 @@ def register_defaults() -> None:
         from web.api.services.credentials.anthropic import AnthropicCredentialHandle
         REGISTRY.register(AnthropicCredentialHandle())
 
+    if "gemini_api" not in {h.name for h in REGISTRY.all()}:
+        from web.api.services.credentials.gemini import GeminiCredentialHandle
+        REGISTRY.register(GeminiCredentialHandle())
+
+    if "openai_api" not in {h.name for h in REGISTRY.all()}:
+        from web.api.services.credentials.openai import OpenAICredentialHandle
+        REGISTRY.register(OpenAICredentialHandle())
+
     recipient = os.environ.get("OPS_ALERT_EMAIL", "").strip() or None
     if recipient and not getattr(REGISTRY, "_notifier_attached", False):
         from tools.email_helper import send_email  # late import — avoids circular
