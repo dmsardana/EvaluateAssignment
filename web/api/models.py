@@ -25,7 +25,7 @@ Status = Literal[
 
 QStatus = Literal["pending", "approved", "needs_rework"]
 
-Tier = Literal["WA", "QA", "AA", "ZA"]
+Tier = Literal["WA", "QA", "AA", "ZA", "GA"]
 
 Band = Literal["TRBLZ", "QUALIF", "DEVLP", "F-GAPS"]
 
@@ -59,6 +59,7 @@ class SubmissionAttachment(BaseModel):
     title: str
     url: Optional[str] = None
     drive_id: Optional[str] = None
+    size_bytes: Optional[int] = None
 
 
 # ───────── Queue list view ─────────
@@ -392,6 +393,7 @@ class TierCutoffs(BaseModel):
     QA: Optional[int] = Field(default=None, ge=0, le=100)
     AA: Optional[int] = Field(default=None, ge=0, le=100)
     ZA: Optional[int] = Field(default=None, ge=0, le=100)
+    GA: Optional[int] = Field(default=None, ge=0, le=100)
 
 
 class RubricResponse(BaseModel):
@@ -399,3 +401,30 @@ class RubricResponse(BaseModel):
     per_question_scores: list[float]
     bands: Thresholds
     band_labels: dict[str, str]
+
+
+# ───────── Report view settings (per-tier component selection) ─────────
+
+
+class ReportComponentMeta(BaseModel):
+    id: str
+    label: str
+    category: str
+    description: str
+    locked: bool = False
+    default_off: bool = False
+
+
+class ReportViewsResponse(BaseModel):
+    tiers: list[str]
+    catalog: list[ReportComponentMeta]
+    by_tier: dict[str, list[str]]
+    defaults: dict[str, list[str]]
+
+
+class ReportViewsPut(BaseModel):
+    by_tier: dict[str, list[str]]
+
+
+class ReportViewsResetPost(BaseModel):
+    tier: str
