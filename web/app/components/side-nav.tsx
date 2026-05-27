@@ -30,6 +30,7 @@ const CONFIGURE: NavItem[] = [
   { href: "/rubric#tier-cutoffs", label: "Tier pass cutoffs" },
   { href: "/settings/classroom", label: "Classroom sync" },
   { href: "/settings/credentials", label: "Credentials" },
+  { href: "/settings/report-views", label: "Report components" },
 ];
 
 const ACCOUNT: NavItem[] = [
