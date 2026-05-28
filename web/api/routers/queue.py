@@ -37,8 +37,41 @@ router = APIRouter(prefix="/api/queue", tags=["queue"])
 
 # ───── helpers ─────
 
-def _resolve_assignment(drive, keys_folder_id: str, coursework_id: str) -> dict:
+def _resolve_assignment(
+    drive,
+    keys_folder_id: str,
+    coursework_id: str,
+    *,
+    classroom=None,
+    classroom_factory=None,
+    course_ids: list[str] | None = None,
+) -> dict:
+    """Find the assignment metadata across all known sources.
+
+    Resolution order (each fallback is cheap if the previous already
+    populated state):
+      1. state.json — assignments that went through the AK pipeline.
+      2. In-memory queue cache — populated by GET /api/queue while the
+         server has been up <60s and the home page was visited.
+      3. Live courseWork listing (only when classroom + course_ids are
+         supplied) — covers cold-cache + brand-new assignments. This is
+         what unblocks a "user clicks a new DETECTED row right after a
+         server restart" flow.
+    """
     entry = queue_svc.get_detail(drive, keys_folder_id, coursework_id)
+    if entry is None:
+        entry = queue_svc.find_in_queue_cache(coursework_id)
+    if entry is None and classroom is not None and course_ids:
+        # Cache was cold (server restart / >60s idle). Force a list_queue
+        # which both warms the cache and lets the second find_in_queue_cache
+        # below return a row.
+        try:
+            queue_svc.list_queue(
+                classroom, drive, keys_folder_id, course_ids, classroom_factory
+            )
+            entry = queue_svc.find_in_queue_cache(coursework_id)
+        except Exception:
+            entry = None
     if entry is None:
         raise HTTPException(
             status_code=404,
@@ -211,11 +244,20 @@ def list_items(
 def get_item(
     coursework_id: str,
     classroom=Depends(get_classroom),
+    classroom_factory=Depends(get_classroom_factory),
     drive=Depends(get_drive),
     keys_folder_id: str = Depends(get_keys_folder_id),
     reports_folder_id: str = Depends(get_reports_folder_id),
+    course_ids: list[str] = Depends(get_course_ids),
 ) -> QueueDetail:
-    entry = _resolve_assignment(drive, keys_folder_id, coursework_id)
+    entry = _resolve_assignment(
+        drive,
+        keys_folder_id,
+        coursework_id,
+        classroom=classroom,
+        classroom_factory=classroom_factory,
+        course_ids=course_ids,
+    )
     course_id = entry.get("course_id", "")
     classroom_data = queue_svc.classroom_detail(classroom, course_id, coursework_id)
     scores_rows = queue_svc.scores_for_assignment(
@@ -243,11 +285,38 @@ def get_item(
 def start_evaluations(
     coursework_id: str,
     body: EvaluateRequest,
+    classroom=Depends(get_classroom),
+    classroom_factory=Depends(get_classroom_factory),
     drive=Depends(get_drive),
     keys_folder_id: str = Depends(get_keys_folder_id),
     reports_folder_id: str = Depends(get_reports_folder_id),
+    course_ids: list[str] = Depends(get_course_ids),
 ) -> EvaluationStartResponse:
-    entry = _resolve_assignment(drive, keys_folder_id, coursework_id)
+    entry = _resolve_assignment(
+        drive,
+        keys_folder_id,
+        coursework_id,
+        classroom=classroom,
+        classroom_factory=classroom_factory,
+        course_ids=course_ids,
+    )
+    # Cheat-proof gate: evaluations require an APPROVED answer key.
+    # Without this, the worker silently fails deep in Drive lookup when
+    # asked to grade a brand-new (status=DETECTED) or pending-review
+    # assignment. SHARED is treated as APPROVED (a graded+shared report
+    # implies the AK was approved at some prior point).
+    status = (entry.get("status") or "").upper()
+    if status not in ("APPROVED", "SHARED"):
+        atype = entry.get("assignment_type", "?")
+        acode = entry.get("assignment_code", "?")
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Cannot evaluate {atype} {acode} — answer key status is "
+                f"{status or 'DETECTED'}. Generate and approve the answer "
+                "key first (Generate → review email → reply 'OK <OTP>')."
+            ),
+        )
     try:
         out = queue_svc.start_evaluation_job(
             drive=drive,

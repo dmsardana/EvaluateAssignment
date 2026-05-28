@@ -284,6 +284,7 @@ export default function QueuePage() {
   const [dateFrom, setDateFrom] = useState<string>(initial.from);
   const [dateTo, setDateTo] = useState<string>(initial.to);
   const [courseFilter, setCourseFilter] = useState<string[]>([]);
+  const [tierFilter, setTierFilter] = useState<string[]>([]);
 
   useEffect(() => {
     const r = ayRange(ay);
@@ -296,17 +297,22 @@ export default function QueuePage() {
     const from = parseDate(dateFrom);
     const to = parseDate(dateTo);
     const selected = new Set(courseFilter);
+    const tiers = new Set(tierFilter);
     return data.filter((i) => {
-      // Strict date filtering: items without a usable date don't fall
-      // within any range, so they're excluded from filtered views.
+      // Date filter applies only to items that have already been
+      // generated. New assignments (never processed) have no
+      // generated_at and must remain visible so they can be evaluated;
+      // otherwise the queue silently hides untouched coursework.
       const d = parseDate(i.generated_at);
-      if (!d) return false;
-      if (from && d < from) return false;
-      if (to && d > to) return false;
+      if (d) {
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+      }
       if (selected.size > 0 && !selected.has(i.course_id || "")) return false;
+      if (tiers.size > 0 && !tiers.has(i.assignment_type)) return false;
       return true;
     });
-  }, [data, dateFrom, dateTo, courseFilter]);
+  }, [data, dateFrom, dateTo, courseFilter, tierFilter]);
 
   const items = sortQueue(filteredItems);
   const actionable = items.filter((i) => ACTIONABLE.includes(i.status));
@@ -343,6 +349,10 @@ export default function QueuePage() {
             value: courseFilter,
             options: courseOptions,
             onChange: setCourseFilter,
+          }}
+          tier={{
+            value: tierFilter,
+            onChange: setTierFilter,
           }}
         />
         <FilterSummary
