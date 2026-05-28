@@ -428,3 +428,17 @@ class ReportViewsPut(BaseModel):
 
 class ReportViewsResetPost(BaseModel):
     tier: str
+
+
+# ───────── Classrooms (cached Google Classroom course list) ─────────
+
+
+class ClassroomCourse(BaseModel):
+    course_id: str
+    name: str
+    section: str
+    label: str  # name + section, ready for the dropdown
+
+
+class ClassroomsResponse(BaseModel):
+    classrooms: list[ClassroomCourse]
