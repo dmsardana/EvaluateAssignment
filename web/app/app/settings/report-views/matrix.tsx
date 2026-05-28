@@ -72,7 +72,7 @@ export function Matrix({
           {tiers.map((t) => (
             <th
               key={t}
-              className={`px-2 text-center w-16 transition-colors duration-100 ${
+              className={`px-2 text-center w-16 ${
                 hoverTier === t ? "bg-ink-10 text-ink-90" : ""
               }`}
               onMouseEnter={() => setHoverTier(t)}
@@ -103,7 +103,7 @@ export function Matrix({
           {tiers.map((t) => (
             <td
               key={t}
-              className={`text-center transition-colors duration-100 ${
+              className={`text-center ${
                 hoverTier === t ? "bg-ink-10" : ""
               }`}
             >
@@ -116,7 +116,7 @@ export function Matrix({
           {tiers.map((t) => (
             <td
               key={t}
-              className={`text-center transition-colors duration-100 ${
+              className={`text-center ${
                 hoverTier === t ? "bg-ink-10" : ""
               }`}
             >
@@ -175,7 +175,7 @@ function CategoryGroup({
         return (
           <tr
             key={row.id}
-            className={`border-b border-ink-5 transition-colors duration-100 ${
+            className={`border-b border-ink-5 ${
               isRow ? "bg-ink-10" : ""
             }`}
             onMouseEnter={() => setHoverRow(row.id)}
@@ -200,7 +200,7 @@ function CategoryGroup({
               return (
                 <td
                   key={t}
-                  className={`text-center transition-colors duration-100 ${cellBg}`}
+                  className={`text-center ${cellBg}`}
                   onMouseEnter={() => setHoverTier(t)}
                   onMouseLeave={() => setHoverTier(null)}
                 >
