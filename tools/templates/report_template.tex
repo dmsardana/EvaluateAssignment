@@ -187,6 +187,8 @@
 % Full-width QRD. Fixed widths: 0.8 + 3.8 + 1.6 + 0.7 + 0.7 + 1.5 = 9.1cm
 % + 6 tabcolsep gaps x 10pt ~= 2.1cm
 % => Concept column = \textwidth - 11.2cm (~5.8cm at the current 17cm width)
+% Supersedes PR #3 (feat/qrd-full-width): same width goal + adds SCAN column
+% + struts force min row heights via \tsQrdHeaderStrut / \tsQrdBodyStrut.
 \begin{longtable}{@{}p{0.8cm}p{3.8cm}p{\dimexpr\textwidth-11.2cm\relax}p{1.6cm}p{0.7cm}p{0.7cm}p{1.5cm}@{}}
 \hline
 \tsQrdHeaderStrut
