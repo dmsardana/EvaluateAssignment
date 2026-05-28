@@ -54,6 +54,7 @@ RULES:
 - Do NOT use markdown bold/italic; the consumer is LaTeX.
 - For multi-part questions, treat each part as a separate "question" entry.
 - Difficulty must be one of: "Easy", "Medium", "Hard", "JEE Advanced".
+- For paragraph/step breaks inside string fields use a real newline character in the JSON (i.e. \n with a SINGLE backslash, which json.loads to a 0x0A newline). Do NOT write `\\n` (double-backslash + n) — that produces a literal `\n` which LaTeX treats as an undefined control sequence.
 
 Return ONLY a valid JSON object (no markdown fences, no explanation) with this exact shape:
 {
@@ -93,9 +94,59 @@ _LATEX_ESCAPE_RE = re.compile(
 )
 
 
+_UNICODE_MATH_MAP = {
+    "²": r"$^{2}$", "³": r"$^{3}$", "⁴": r"$^{4}$", "⁵": r"$^{5}$",
+    "⁶": r"$^{6}$", "⁷": r"$^{7}$", "⁸": r"$^{8}$", "⁹": r"$^{9}$",
+    "⁰": r"$^{0}$", "¹": r"$^{1}$",
+    "₀": r"$_{0}$", "₁": r"$_{1}$", "₂": r"$_{2}$", "₃": r"$_{3}$",
+    "₄": r"$_{4}$", "₅": r"$_{5}$", "₆": r"$_{6}$", "₇": r"$_{7}$",
+    "₈": r"$_{8}$", "₉": r"$_{9}$",
+    "≤": r"$\leq$", "≥": r"$\geq$", "≠": r"$\neq$", "≈": r"$\approx$",
+    "→": r"$\rightarrow$", "←": r"$\leftarrow$", "⇒": r"$\Rightarrow$",
+    "⇐": r"$\Leftarrow$", "↔": r"$\leftrightarrow$",
+    "×": r"$\times$", "÷": r"$\div$", "·": r"$\cdot$",
+    "∞": r"$\infty$", "∑": r"$\sum$", "∫": r"$\int$",
+    "∂": r"$\partial$", "∇": r"$\nabla$",
+    "π": r"$\pi$", "α": r"$\alpha$", "β": r"$\beta$", "γ": r"$\gamma$",
+    "δ": r"$\delta$", "θ": r"$\theta$", "λ": r"$\lambda$", "μ": r"$\mu$",
+    "σ": r"$\sigma$", "φ": r"$\phi$", "ω": r"$\omega$", "Δ": r"$\Delta$",
+    "Σ": r"$\Sigma$", "Ω": r"$\Omega$", "°": r"$^{\circ}$",
+    "±": r"$\pm$", "∓": r"$\mp$", "∈": r"$\in$", "∉": r"$\notin$",
+    "⊂": r"$\subset$", "⊃": r"$\supset$", "∪": r"$\cup$", "∩": r"$\cap$",
+}
+_UNICODE_MATH_RE = re.compile("|".join(re.escape(k) for k in _UNICODE_MATH_MAP))
+
+
+_LITERAL_ESC_RE = re.compile(r"\\([ntr])(?![a-zA-Z])")
+
+
 def latex_escape(text: str) -> str:
-    """Conservative escape — DO NOT escape $, {, }, \\ since solutions contain LaTeX math."""
-    return _LATEX_ESCAPE_RE.sub(lambda m: _LATEX_ESCAPE_MAP[m.group()], str(text or ""))
+    """Conservative escape — DO NOT escape $, {, }, \\ since solutions contain LaTeX math.
+    Also converts common unicode math symbols to LaTeX equivalents so the
+    model can't accidentally emit a bare ² or → outside $...$.
+    Also normalizes literal \\n / \\t / \\r escape sequences (model emits these
+    via double-escaped JSON like "\\\\n") to real whitespace — otherwise LaTeX
+    sees \\n as an undefined control sequence."""
+    s = str(text or "")
+    s = _LITERAL_ESC_RE.sub(lambda m: {"n": "\n\n", "t": "  ", "r": ""}[m.group(1)], s)
+    s = _UNICODE_MATH_RE.sub(lambda m: _UNICODE_MATH_MAP[m.group()], s)
+    return _LATEX_ESCAPE_RE.sub(lambda m: _LATEX_ESCAPE_MAP[m.group()], s)
+
+
+def latex_sanitize(text: str) -> str:
+    """Gentle pass for math-bearing fields (solution, concise, final_answer,
+    approach, question_text). Does NOT escape $/{/}/_/\\ because these fields
+    legitimately contain raw LaTeX. Only:
+      - normalizes literal \\n, \\t, \\r to real whitespace,
+      - converts common unicode math symbols to LaTeX equivalents,
+      - balances $ count by appending a closing $ if odd."""
+    s = str(text or "")
+    s = _LITERAL_ESC_RE.sub(lambda m: {"n": "\n\n", "t": "  ", "r": ""}[m.group(1)], s)
+    s = _UNICODE_MATH_RE.sub(lambda m: _UNICODE_MATH_MAP[m.group()], s)
+    unescaped = re.findall(r"(?<!\\)\$", s)
+    if len(unescaped) % 2 == 1:
+        s = s + " $"
+    return s
 
 
 def build_jinja_env() -> jinja2.Environment:
@@ -110,6 +161,7 @@ def build_jinja_env() -> jinja2.Environment:
         undefined=jinja2.StrictUndefined,
     )
     env.filters["latex_escape"] = latex_escape
+    env.filters["latex_sanitize"] = latex_sanitize
     return env
 
 
@@ -136,8 +188,22 @@ def compile_latex(tex_source: str, output_dir: str, base_name: str) -> str:
         if result.returncode != 0:
             log_path = os.path.join(tmpdir, f"{base_name}.log")
             log = open(log_path).read()[-3000:] if os.path.exists(log_path) else ""
+            # Persist the failing .tex + .log so the actual broken macro
+            # can be inspected (the tmpdir vanishes when this function
+            # returns). Lives next to the keys output dir.
+            dbg_dir = os.path.join(os.path.dirname(output_dir), "_failed_ak")
+            try:
+                os.makedirs(dbg_dir, exist_ok=True)
+                from datetime import datetime as _dt
+                ts = _dt.now().strftime("%Y%m%dT%H%M%S")
+                shutil.copy2(tex_path, os.path.join(dbg_dir, f"{ts}_{base_name}.tex"))
+                if os.path.exists(log_path):
+                    shutil.copy2(log_path, os.path.join(dbg_dir, f"{ts}_{base_name}.log"))
+                dbg_hint = f" (saved to {dbg_dir}/{ts}_{base_name}.{{tex,log}})"
+            except Exception:
+                dbg_hint = ""
             raise RuntimeError(
-                f"LaTeX compile failed:\n{result.stderr}\n--LOG--\n{log}"
+                f"LaTeX compile failed{dbg_hint}:\n{result.stderr}\n--LOG--\n{log}"
             )
 
         compiled = os.path.join(tmpdir, f"{base_name}.pdf")
@@ -203,10 +269,42 @@ def pick_model(asgn_type: str) -> str:
     return os.getenv(f"EVALUATOR_MODEL_{asgn_type}", "claude-sonnet-4-6")
 
 
+def _drop_truncated_questions(solutions: dict) -> dict:
+    """Drop questions missing required fields — protects the LaTeX template
+    from accessing q.final_answer / q.solution on stubs left behind when
+    the LLM hit max_tokens mid-question. Emits a warning to stderr so the
+    operator knows the AK is incomplete."""
+    required = ("question_text", "solution", "final_answer")
+    qs = solutions.get("questions") or []
+    kept, dropped = [], []
+    for q in qs:
+        if all(q.get(k) for k in required):
+            kept.append(q)
+        else:
+            dropped.append(q.get("number"))
+    if dropped:
+        import sys as _sys
+        _sys.stderr.write(
+            f"  [AK] WARNING: dropping {len(dropped)} truncated question(s) "
+            f"(no final_answer/solution): {dropped}\n"
+        )
+    solutions["questions"] = kept
+    return solutions
+
+
 def generate_solutions(question_pdf_bytes: bytes, asgn_type: str,
                        redo_q_nums: list[int] | None = None,
                        prev_questions: list[dict] | None = None) -> dict:
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    # Stream the response. A 15-question answer key easily fills 15K+
+    # output tokens; the old non-streaming call with max_tokens=8192
+    # was truncating mid-JSON and crashing with "Unterminated string".
+    # Anthropic recommends streaming for any call that may run >60s
+    # (see https://docs.anthropic.com/en/api/errors#long-requests).
+    client = anthropic.Anthropic(
+        api_key=os.getenv("ANTHROPIC_API_KEY"),
+        max_retries=1,
+        timeout=600.0,
+    )
     model = pick_model(asgn_type)
 
     pdf_b64 = base64.standard_b64encode(question_pdf_bytes).decode("utf-8")
@@ -219,9 +317,9 @@ def generate_solutions(question_pdf_bytes: bytes, asgn_type: str,
             prev_json=prev_json,
         ) + GENERATION_PROMPT
 
-    msg = client.messages.create(
+    with client.messages.stream(
         model=model,
-        max_tokens=8192,
+        max_tokens=60000,
         messages=[{
             "role": "user",
             "content": [
@@ -237,15 +335,162 @@ def generate_solutions(question_pdf_bytes: bytes, asgn_type: str,
                 {"type": "text", "text": prompt},
             ],
         }],
+    ) as stream:
+        final = stream.get_final_message()
+
+    from tools.usage_log import log_llm_call
+    log_llm_call(
+        provider="anthropic",
+        model=model,
+        input_tokens=getattr(final.usage, "input_tokens", 0) or 0,
+        output_tokens=getattr(final.usage, "output_tokens", 0) or 0,
+        purpose="ak_generation",
+        assignment_type=asgn_type,
+        question_pdf_bytes=len(question_pdf_bytes),
+        is_regen=bool(redo_q_nums),
     )
 
-    raw = msg.content[0].text.strip()
+    raw = final.content[0].text.strip()
     if raw.startswith("```"):
         raw = raw.split("```", 2)[1]
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
-    return json.loads(raw)
+
+    # Try plain parse first; if the model emitted bad escapes (a LaTeX
+    # backslash that wasn't doubled), repair and retry. On a final
+    # failure, persist the raw payload to .tmp/_raw_ak/ for postmortem
+    # — the surfaced error message includes the path so an operator
+    # can inspect what the model actually produced.
+    try:
+        return _drop_truncated_questions(json.loads(raw))
+    except json.JSONDecodeError:
+        pass
+
+    # LaTeX-command detector — same heuristic as tools/evaluate_pdf.py.
+    import re as _re
+    _LATEX_CMD_RE = _re.compile(r'(?<!\\)\\([a-zA-Z])(?=[a-zA-Z])')
+    _INVALID_ESC_RE = _re.compile(r'(?<!\\)\\(?!["\\/bfnrtu]|u[0-9a-fA-F]{4})')
+    repaired = _LATEX_CMD_RE.sub(lambda m: '\\\\' + m.group(1), raw)
+    repaired = _INVALID_ESC_RE.sub(r'\\\\', repaired)
+    try:
+        return _drop_truncated_questions(json.loads(repaired))
+    except json.JSONDecodeError as exc:
+        # Last-ditch: json-repair handles the long tail (unescaped quotes
+        # mid-string, trailing commas, unquoted keys, truncated tails)
+        # that our regex pass misses on 32K-token outputs.
+        try:
+            import json_repair  # type: ignore
+            return _drop_truncated_questions(json_repair.loads(repaired))
+        except Exception:
+            try:
+                return _drop_truncated_questions(json_repair.loads(raw))
+            except Exception:
+                pass
+        from datetime import datetime as _dt
+        dbg_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            ".tmp", "_raw_ak",
+        )
+        os.makedirs(dbg_dir, exist_ok=True)
+        ts = _dt.now().strftime("%Y%m%dT%H%M%S")
+        path = os.path.join(dbg_dir, f"{ts}_{asgn_type}.txt")
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(f"# JSON parse failure: {exc}\n")
+                f.write(f"# asgn_type={asgn_type}\n\n")
+                f.write(raw)
+        except OSError:
+            path = "(could not write debug file)"
+        raise json.JSONDecodeError(
+            f"{exc.msg} (raw payload saved to {path})",
+            exc.doc,
+            exc.pos,
+        ) from exc
+
+
+def _fix_solutions_for_latex(
+    question_pdf_bytes: bytes,
+    solutions: dict,
+    latex_error: str,
+    model: str,
+) -> dict:
+    """Self-healing retry: when compile_latex fails, send the bad solutions
+    JSON + the LaTeX error back to the model and ask it to return a fixed
+    JSON. The sanitize filters catch the common patterns; this catches the
+    long tail (missing braces, undefined commands, stray ^ in text, etc.)."""
+    client = anthropic.Anthropic(
+        api_key=os.getenv("ANTHROPIC_API_KEY"),
+        max_retries=1,
+        timeout=600.0,
+    )
+    pdf_b64 = base64.standard_b64encode(question_pdf_bytes).decode("utf-8")
+    prev_json = json.dumps(solutions, indent=2)
+    err_tail = latex_error[-2000:]
+    prompt = f"""The previous JSON solution set produced LaTeX that fails to compile with this error:
+
+{err_tail}
+
+Common causes (fix all of them across EVERY question):
+- Unbalanced $...$ delimiters — count of $ must be even within each string field.
+- Bare ^ or _ outside math mode (wrap in $...$).
+- Literal \\n inside a string — in JSON use a single backslash + n which json.loads collapses to a real newline.
+- Undefined commands like \\cancel — remove or replace with a defined alternative.
+- Missing closing brace in \\frac{{a}}{{b}}, \\sqrt{{x}}, etc.
+- Spurious trailing $ at the end of a field.
+
+Return the corrected JSON in the EXACT same shape (same keys, same number of questions). Do NOT add explanation. Return ONLY the JSON object.
+
+PREVIOUS JSON:
+{prev_json}
+"""
+    with client.messages.stream(
+        model=model,
+        max_tokens=60000,
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "document",
+                    "source": {"type": "base64", "media_type": "application/pdf", "data": pdf_b64},
+                    "title": "Question Paper",
+                },
+                {"type": "text", "text": prompt},
+            ],
+        }],
+    ) as stream:
+        final = stream.get_final_message()
+    from tools.usage_log import log_llm_call
+    log_llm_call(
+        provider="anthropic",
+        model=model,
+        input_tokens=getattr(final.usage, "input_tokens", 0) or 0,
+        output_tokens=getattr(final.usage, "output_tokens", 0) or 0,
+        purpose="ak_self_heal",
+        question_pdf_bytes=len(question_pdf_bytes),
+    )
+    raw = final.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+    try:
+        return _drop_truncated_questions(json.loads(raw))
+    except json.JSONDecodeError:
+        import re as _re
+        _LATEX_CMD_RE = _re.compile(r'(?<!\\)\\([a-zA-Z])(?=[a-zA-Z])')
+        _INVALID_ESC_RE = _re.compile(r'(?<!\\)\\(?!["\\/bfnrtu]|u[0-9a-fA-F]{4})')
+        repaired = _LATEX_CMD_RE.sub(lambda m: '\\\\' + m.group(1), raw)
+        repaired = _INVALID_ESC_RE.sub(r'\\\\', repaired)
+        try:
+            return _drop_truncated_questions(json.loads(repaired))
+        except json.JSONDecodeError:
+            import json_repair  # type: ignore
+            try:
+                return _drop_truncated_questions(json_repair.loads(repaired))
+            except Exception:
+                return _drop_truncated_questions(json_repair.loads(raw))
 
 
 # ── Email ──────────────────────────────────────────────────────────────────────
@@ -311,51 +556,109 @@ The PDF answer key + concise solution set is attached.
 
 
 # ── Pipeline integration ───────────────────────────────────────────────────────
-def process_coursework(course_id: str, coursework_id: str, asgn_type: str,
-                       asgn_code: str, asgn_title: str,
-                       drive, classroom, keys_folder_id: str,
-                       state: dict,
-                       redo_q_nums: list[int] | None = None) -> dict:
-    """Run AK generation for one coursework. Returns updated state entry."""
-    from tools.email_helper import send_review_email
+def process_coursework(
+    course_id: str,
+    coursework_id: str,
+    assignment_type: str,
+    assignment_code: str,
+    assignment_title: str,
+    drive,
+    classroom,
+    keys_folder_id: str,
+    state: dict | None = None,
+    redo_q_nums: list[int] | None = None,
+    on_progress=None,
+) -> dict:
+    """Run AK generation for one coursework. Returns updated state entry.
 
-    print(f"  [AK] Pulling question paper for {asgn_type} {asgn_code}…")
+    Parameter naming aligns with the rest of the codebase — callers use
+    `assignment_type`, `assignment_code`, `assignment_title` (matching
+    the dict keys produced by parse_assignment_meta and the Pydantic
+    Tier model). `state` is optional: if None we load it from Drive so
+    CLI and web callers share one entry point. `on_progress(stage, label)`
+    lets the queue UI surface pipeline milestones.
+    """
+    from tools.email_helper import send_review_email
+    from tools.review_state import load_state
+
+    def _notify(stage: str, label: str | None = None) -> None:
+        if on_progress is None:
+            return
+        try:
+            on_progress(stage, label)
+        except Exception:  # never let UI plumbing break the pipeline
+            pass
+
+    if state is None:
+        state = load_state(drive, keys_folder_id) or {}
+
+    print(f"  [AK] Pulling question paper for {assignment_type} {assignment_code}…")
+    _notify("fetching_pdf")
     question_pdf = get_question_paper_pdf(drive, classroom, course_id, coursework_id)
 
     prev_entry = state.get(coursework_id, {})
     prev_questions = prev_entry.get("questions", []) if redo_q_nums else None
 
-    print(f"  [AK] Generating solutions with {pick_model(asgn_type)}…")
+    print(f"  [AK] Generating solutions with {pick_model(assignment_type)}…")
+    _notify("calling_llm", pick_model(assignment_type))
     solutions = generate_solutions(
-        question_pdf, asgn_type,
+        question_pdf, assignment_type,
         redo_q_nums=redo_q_nums, prev_questions=prev_questions,
     )
 
     otp = generate_otp()
 
-    # Render LaTeX
+    # Render LaTeX with self-healing retry: if compile fails, send the
+    # error back to the model and ask it to fix the JSON. Up to 2 fix
+    # attempts (3 total compile attempts).
+    _notify("rendering_pdf")
     env = build_jinja_env()
     template = env.get_template("answer_key_template.tex")
-    tex = template.render(
-        assignment={"type": asgn_type, "code": asgn_code, "title": asgn_title},
-        questions=solutions["questions"],
-        generated_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
-        model=pick_model(asgn_type),
-        otp=otp,
-    )
-    base = f"{asgn_type}_{asgn_code}_KEY"
-    pdf_path = compile_latex(tex, KEYS_TMP, base)
+    base = f"{assignment_type}_{assignment_code}_KEY"
+    model_used = pick_model(assignment_type)
+    last_err: Exception | None = None
+    pdf_path = None
+    for attempt in range(3):
+        tex = template.render(
+            assignment={"type": assignment_type, "code": assignment_code, "title": assignment_title},
+            questions=solutions["questions"],
+            generated_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            model=model_used,
+            otp=otp,
+        )
+        try:
+            pdf_path = compile_latex(tex, KEYS_TMP, base)
+            break
+        except RuntimeError as err:
+            last_err = err
+            if attempt == 2:
+                raise
+            print(f"  [AK] compile attempt {attempt+1} failed; asking model to fix…", flush=True)
+            _notify("calling_llm", f"{model_used} (fix-up {attempt+1})")
+            try:
+                solutions = _fix_solutions_for_latex(
+                    question_pdf, solutions, str(err), model_used,
+                )
+            except Exception as fix_err:  # noqa: BLE001
+                raise RuntimeError(
+                    f"Self-heal failed on attempt {attempt+1}: {fix_err}. "
+                    f"Original LaTeX error: {err}"
+                ) from fix_err
+    if pdf_path is None:
+        raise RuntimeError(f"LaTeX compile failed after 3 attempts: {last_err}")
     print(f"  [AK] PDF: {pdf_path}")
 
     # Upload to Drive
+    _notify("uploading")
     drive_id = upload_pdf_to_drive(drive, keys_folder_id, pdf_path, f"{base}.pdf")
     print(f"  [AK] Uploaded to Drive: {drive_id}")
 
     # Send email
+    _notify("emailing_teacher")
     teacher_email = os.getenv("TEACHER_EMAIL", "").strip()
     subject, body_text, body_html = build_review_email(
-        asgn_type, asgn_code, asgn_title,
-        len(solutions["questions"]), otp, pick_model(asgn_type),
+        assignment_type, assignment_code, assignment_title,
+        len(solutions["questions"]), otp, pick_model(assignment_type),
     )
     sent = send_review_email(
         to_addr=teacher_email,
@@ -381,9 +684,9 @@ def process_coursework(course_id: str, coursework_id: str, asgn_type: str,
     return {
         "course_id": course_id,
         "coursework_id": coursework_id,
-        "assignment_type": asgn_type,
-        "assignment_code": asgn_code,
-        "assignment_title": asgn_title,
+        "assignment_type": assignment_type,
+        "assignment_code": assignment_code,
+        "assignment_title": assignment_title,
         "status": "PENDING_REVIEW",
         "current_otp": otp,
         "thread_id": sent["threadId"],
@@ -391,7 +694,7 @@ def process_coursework(course_id: str, coursework_id: str, asgn_type: str,
         "questions": solutions["questions"],
         "questions_status": questions_status,
         "drive_pdf_id": drive_id,
-        "model": pick_model(asgn_type),
+        "model": pick_model(assignment_type),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
