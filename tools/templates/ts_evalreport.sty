@@ -1115,4 +1115,24 @@
     \end{tabular}\par
 }
 
+% ============================================================
+% Per-tier-report-views helpers (DAM matrix + QRD table)
+% ============================================================
+
+% \tsDamCell{count}{avg_pct_int}
+% Renders a count + average-percentage cell for the Difficulty x
+% Learning-Objective matrix. Zero-count cells are muted so empty
+% buckets don't compete with real data.
+\newcommand{\tsDamCell}[2]{%
+  \ifnum#1=0\relax
+    {\color{tsLightGrey}\,0\,}%
+  \else
+    \makebox[1.6cm][c]{\textbf{#1}\,/\,#2\%}%
+  \fi
+}
+
+% \tsQrdRow{number}{topic}{concept}{attempted}{difficulty}{lo}
+% Per-question row in the QRD (Question Response Data) table.
+\newcommand{\tsQrdRow}[6]{\textbf{#1} & #2 & #3 & #4 & #5 & #6 \\}
+
 \endinput

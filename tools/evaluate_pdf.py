@@ -88,6 +88,9 @@ You must return a single JSON object (no markdown fences, no commentary outside 
     {
       "number": 1,
       "topic": "Square root + Log on x²",
+      "concept": "Square-root non-negativity",
+      "difficulty": "D2",
+      "learning_objective": "L2",
       "function_latex": "$f(x) = \\\\sqrt{\\\\log_{16}(x^2)}$",
       "your_answer": "$x \\\\in (-\\\\infty, -1] \\\\cup [1, \\\\infty)$",
       "expected_answer": "$x \\\\in (-\\\\infty, -1] \\\\cup [1, \\\\infty)$",
@@ -155,6 +158,7 @@ CLOSING-NOTE HARD RULES (violations cause the report to be regenerated):
 - The intro and what_signals fields are bound by the same rule.
 
 GUIDELINES
+- Classify `difficulty` and `learning_objective` from the QUESTION PAPER, not from the student's response. `concept` is the single specific idea the question primarily tests (a short noun phrase). Difficulty: D1=Easy / D2=Medium / D3=Difficult. Learning objective: L1=Recall, L2=Apply, L3=Relate/Analytical, L4=Create/Synthesise.
 - Use LaTeX inline math `$...$` everywhere a formula appears (function_latex, your_answer, expected_answer, comments, feedback, swot evidence). Use `\\\\mathbb{R}`, `\\\\cup`, `\\\\cap`, `\\\\geq`, `\\\\leq`, `\\\\in`, `\\\\sqrt{}`, `\\\\frac{}{}` etc.
 - JSON ESCAPE RULE — every backslash inside a JSON string MUST be doubled. Write `\\\\frac`, `\\\\sqrt`, `\\\\mathbb`, `\\\\circ`, `\\\\angle`, `\\\\int`, `\\\\sum` etc. A single `\\f`, `\\s`, `\\m`, `\\c`, `\\i` will fail strict JSON parsing and the whole evaluation is discarded.
 - Concept-map matrix cells must be one of: "G" (green = full), "A" (amber = partial), "R" (red = failed), "N" (neutral grey = untested by that question).
