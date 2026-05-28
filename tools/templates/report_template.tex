@@ -180,11 +180,14 @@
 \par\vspace{0.25cm}
 \noindent
 \begingroup
-\setlength{\tabcolsep}{6pt}%
+\setlength{\tabcolsep}{5pt}%
 \renewcommand{\arraystretch}{1.25}%
 \arrayrulecolor{tsLightGrey}%
 \fontsize{8.5pt}{10pt}\selectfont
-\begin{longtable}{@{}p{0.8cm}p{3.6cm}p{4.5cm}p{1.4cm}p{0.8cm}p{0.8cm}@{}}
+% Full-width QRD table: fixed widths for Q#/Attempted/D/LO; Topic + Concept
+% split the remaining \textwidth. The \dimexpr handles future margin tweaks
+% without re-tuning column widths by hand.
+\begin{longtable}{@{}p{0.8cm}p{4.4cm}p{\dimexpr\textwidth-11.1cm\relax}p{1.8cm}p{0.9cm}p{0.9cm}@{}}
 \hline
 {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} \\
 \hline
