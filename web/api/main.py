@@ -11,7 +11,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from web.api.routers import credentials, queue, reports, scores, settings, students, wire
+from web.api.routers import (
+    classrooms,
+    credentials,
+    queue,
+    reports,
+    scores,
+    settings,
+    students,
+    wire,
+)
 from web.api.services.credentials.scheduler import (
     run_one_tick,
     start_scheduler,
@@ -76,6 +85,7 @@ app.include_router(students.router)
 app.include_router(reports.router)
 app.include_router(scores.router)
 app.include_router(credentials.router)
+app.include_router(classrooms.router)
 
 
 @app.get("/api/health")

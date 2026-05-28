@@ -374,4 +374,16 @@ export const api = {
     jput<ReportViewsResponse>("/api/settings/report-views", body),
   resetReportViews: (tier: string) =>
     jpost<ReportViewsResponse>("/api/settings/report-views/reset", { tier }),
+  classrooms: () => jget<ClassroomsResponse>("/api/classrooms"),
 };
+
+export interface ClassroomCourse {
+  course_id: string;
+  name: string;
+  section: string;
+  label: string;
+}
+
+export interface ClassroomsResponse {
+  classrooms: ClassroomCourse[];
+}

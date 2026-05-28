@@ -231,13 +231,22 @@ export default function QueuePage() {
     () => api.queue(),
     { refreshInterval: 10_000 },
   );
-  // /api/students gives us friendly course labels (with section). SWR
-  // dedupes by cache key, so this shares the top-bar search's existing
-  // fetch — no extra network call.
+  // /api/students gives us friendly course labels (with section) for any
+  // archived/unknown course referenced by a queue item. SWR dedupes by
+  // cache key, so this shares the top-bar search's existing fetch — no
+  // extra network call.
   const { data: studentsData } = useSWR<StudentProfile[]>(
     "/api/students",
     () => api.students(),
     { refreshInterval: 120_000 },
+  );
+  // /api/classrooms is a small, Postgres-cached endpoint (5-min TTL on
+  // the backend) — populates the dropdown immediately without waiting
+  // for /api/queue's N+M Google API round trips.
+  const { data: classroomsData } = useSWR(
+    "/api/classrooms",
+    () => api.classrooms(),
+    { refreshInterval: 300_000 },
   );
 
   // AY + date + classroom filters. Strict date filtering: items without
@@ -255,9 +264,10 @@ export default function QueuePage() {
   }, [data, today]);
 
   const courseOptions = useMemo(() => {
-    // Friendly course labels come from /api/students (each StudentProfile
-    // carries its courses[].label with section). Build a course_id →
-    // label map and resolve labels for course_ids present in the queue.
+    // Primary source: /api/classrooms (Postgres-cached, available before
+    // /api/queue completes). Then merge in any course_ids that appear in
+    // the queue but aren't in /api/classrooms (e.g., archived courses),
+    // with labels from /api/students as a friendlier fallback.
     const labelByCourseId = new Map<string, string>();
     for (const s of studentsData ?? []) {
       for (const c of s.courses) {
@@ -267,18 +277,18 @@ export default function QueuePage() {
       }
     }
     const seen = new Map<string, string>();
+    for (const c of classroomsData?.classrooms ?? []) {
+      if (c.course_id) seen.set(c.course_id, c.label || c.course_id);
+    }
     for (const it of data ?? []) {
       const cid = it.course_id || "";
       if (!cid || seen.has(cid)) continue;
-      // Friendly label when /api/students has it; raw course_id as last
-      // resort so the option still appears (and stays filterable) even
-      // before the students payload has loaded.
       seen.set(cid, labelByCourseId.get(cid) || cid);
     }
     return [...seen.entries()]
       .map(([course_id, label]) => ({ course_id, label }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [data, studentsData]);
+  }, [classroomsData, data, studentsData]);
 
   const [ay, setAy] = useState<number>(currentAyStart);
   const initial = ayRange(currentAyStart);
