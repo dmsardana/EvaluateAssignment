@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 import { FilterBar, FilterSummary } from "@/components/filter-bar";
@@ -283,7 +284,45 @@ export default function QueuePage() {
   const initial = ayRange(currentAyStart);
   const [dateFrom, setDateFrom] = useState<string>(initial.from);
   const [dateTo, setDateTo] = useState<string>(initial.to);
-  const [courseFilter, setCourseFilter] = useState<string[]>([]);
+
+  // Classroom filter persists in the URL as ?course=A,B,C — survives refresh,
+  // back/forward nav, and becomes a shareable deep link.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [courseFilter, setCourseFilterState] = useState<string[]>(() => {
+    const raw = searchParams?.get("course");
+    return raw ? raw.split(",").filter(Boolean) : [];
+  });
+  const setCourseFilter = useCallback(
+    (next: string[]) => {
+      setCourseFilterState(next);
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      if (next.length > 0) params.set("course", next.join(","));
+      else params.delete("course");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  // Keep classroom filter in sync with browser back/forward navigation.
+  // setCourseFilter already writes to the URL on user action; this effect
+  // only handles the URL-changed-externally case (back button, deep link).
+  useEffect(() => {
+    const raw = searchParams?.get("course");
+    const fromUrl = raw ? raw.split(",").filter(Boolean) : [];
+    setCourseFilterState((current) => {
+      if (
+        current.length === fromUrl.length &&
+        current.every((v, i) => v === fromUrl[i])
+      ) {
+        return current;
+      }
+      return fromUrl;
+    });
+  }, [searchParams]);
+
   const [tierFilter, setTierFilter] = useState<string[]>([]);
 
   useEffect(() => {
