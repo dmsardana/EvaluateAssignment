@@ -342,6 +342,7 @@ def make_qrd_rows(evaluation: dict) -> list[dict]:
             "attempted": attempted,
             "difficulty": q.get("difficulty") or "D2",
             "learning_objective": q.get("learning_objective") or "L2",
+            "scan_quality": q.get("scan_quality", "Good"),
         })
     return out
 
