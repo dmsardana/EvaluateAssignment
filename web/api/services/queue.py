@@ -31,7 +31,7 @@ from tools.review_state import load_state, save_state
 from tools.track_scores import load_csv as _scores_load_csv
 from tools.track_scores import save_csv as _scores_save_csv
 from tools.watch_classroom import parse_assignment_meta
-from tools.tier_config import TIER_CONFIG, get_pass_pct
+from tools.tier_config import KNOWN_TIERS, TIER_CONFIG, get_pass_pct
 
 
 # ───── locally-defined link/unlink helpers ─────
@@ -271,8 +271,10 @@ def _courseworks_for(classroom, course_id: str) -> list[dict]:
             asgn_type, asgn_code = parse_assignment_meta(title)
             if not asgn_type or not asgn_code:
                 continue
-            # Pydantic Tier literal is WA|QA|AA|ZA; skip anything else.
-            if asgn_type not in ("WA", "QA", "AA", "ZA"):
+            # Skip anything not declared in tier_config.TIER_CONFIG —
+            # the Pydantic Tier literal and the frontend AssignmentType
+            # are kept in lockstep with KNOWN_TIERS.
+            if asgn_type not in KNOWN_TIERS:
                 continue
             out.append(
                 {
@@ -460,6 +462,48 @@ def _drive_view_url(drive_id: str | None) -> str | None:
     return f"https://drive.google.com/file/d/{drive_id}/view"
 
 
+_SIZE_CACHE: dict[str, tuple[int | None, float]] = {}
+_SIZE_CACHE_TTL = 24 * 3600.0
+
+
+def _resolve_attachment_size(
+    drive, drive_id: str | None, cwid: str | None, sid: str | None
+) -> int | None:
+    """File size in bytes for a Drive attachment, or None.
+
+    Resolution order: local cached copy at web/api/_tmp/<cwid>/<sid>.pdf
+    (free stat) → process-memoised Drive files().get(fields="size")
+    with 24h TTL → None on any failure."""
+    if not drive_id:
+        return None
+    if cwid and sid:
+        local = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "_tmp", cwid, f"{sid}.pdf",
+        )
+        if os.path.exists(local):
+            try:
+                return os.path.getsize(local)
+            except OSError:
+                pass
+    import time as _time
+    now = _time.time()
+    cached = _SIZE_CACHE.get(drive_id)
+    if cached and now - cached[1] < _SIZE_CACHE_TTL:
+        return cached[0]
+    if drive is None:
+        return None
+    try:
+        meta = drive.files().get(
+            fileId=drive_id, fields="size", supportsAllDrives=True
+        ).execute()
+        size = int(meta.get("size") or 0) or None
+    except Exception:
+        size = None
+    _SIZE_CACHE[drive_id] = (size, now)
+    return size
+
+
 def _format_material(m: dict) -> dict:
     if "driveFile" in m:
         d = m["driveFile"].get("driveFile") or m["driveFile"]
@@ -531,6 +575,31 @@ def get_detail(drive, keys_folder_id: str, coursework_id: str) -> dict | None:
     return state.get(coursework_id)
 
 
+def find_in_queue_cache(coursework_id: str) -> dict | None:
+    """Scan in-memory queue caches for a coursework_id match.
+
+    Lets the detail endpoint resolve a brand-new assignment (e.g. a fresh
+    GA on Classroom that hasn't yet gone through answer-key generation,
+    so state.json has no entry for it). Returns the row from the cached
+    queue listing — which already contains course_id, assignment_type,
+    assignment_code, etc. — or None if no cache entry has it.
+    """
+    with _cache_lock:
+        cache_snapshot = list(_cache.items())
+    for key, entry in cache_snapshot:
+        if not key.startswith("queue:"):
+            continue
+        ts, value = entry
+        if time.time() - ts > _CACHE_TTL_S:
+            continue
+        if not isinstance(value, list):
+            continue
+        for row in value:
+            if isinstance(row, dict) and row.get("coursework_id") == coursework_id:
+                return row
+    return None
+
+
 def classroom_detail(classroom, course_id: str, coursework_id: str) -> dict:
     cache_key = f"cwdetail:{course_id}:{coursework_id}"
     cached = _cache_get(cache_key)
@@ -562,6 +631,15 @@ def classroom_detail(classroom, course_id: str, coursework_id: str) -> dict:
     description = cw.get("description") or ""
 
     submissions = []
+    # Drive client for attachment size lookups; lazy + best-effort so a
+    # credential blip doesn't break the whole detail view.
+    drive = None
+    try:
+        from web.api.services.credentials import REGISTRY
+        drive = REGISTRY.get("google_oauth").get_drive()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("drive client unavailable for attachment-size lookup: %s", exc)
+
     try:
         roster = _roster(classroom, course_id)
         subs_resp = (
@@ -587,6 +665,9 @@ def classroom_detail(classroom, course_id: str, coursework_id: str) -> dict:
                             "title": df.get("title", ""),
                             "url": df.get("alternateLink") or _drive_view_url(df.get("id")),
                             "drive_id": df.get("id"),
+                            "size_bytes": _resolve_attachment_size(
+                                drive, df.get("id"), coursework_id, sid
+                            ),
                         }
                     )
                 elif "link" in att:
@@ -595,6 +676,7 @@ def classroom_detail(classroom, course_id: str, coursework_id: str) -> dict:
                             "title": att["link"].get("title", "link"),
                             "url": att["link"].get("url"),
                             "drive_id": None,
+                            "size_bytes": None,
                         }
                     )
             submissions.append(
@@ -692,7 +774,8 @@ def run_generation_inline(
 
     try:
         _record_progress(coursework_id, "fetching_pdf")
-        process_coursework(
+        state = load_state(drive, keys_folder_id) or {}
+        new_entry = process_coursework(
             drive=drive,
             classroom=classroom,
             keys_folder_id=keys_folder_id,
@@ -701,10 +784,14 @@ def run_generation_inline(
             assignment_type=asgn_type,
             assignment_code=asgn_code,
             assignment_title=asgn_title,
+            state=state,
             on_progress=lambda stage, label=None: _record_progress(
                 coursework_id, stage, label
             ),
         )
+        state[coursework_id] = new_entry
+        save_state(drive, keys_folder_id, state)
+        invalidate_queue_cache()
         _record_progress(coursework_id, "done")
     except GenerationCancelled:
         print(f"[gen:{coursework_id}] cancelled by operator", flush=True)
@@ -884,7 +971,7 @@ def fail_generation(
     errs.append(
         {
             "at": datetime.now(timezone.utc).isoformat(),
-            "message": error[:500],
+            "message": error[:5000],
         }
     )
     entry["errors"] = errs
@@ -1454,6 +1541,14 @@ def evaluate_one_submission(
     asgn_title = entry.get("assignment_title", f"{asgn_type} {asgn_code}")
     max_points = entry.get("max_points")
 
+    # Clear any stale progress entry from a prior run so this evaluation
+    # starts with a fresh started_at + no carried-over error. Without this,
+    # re-eval clicks silently reuse the old "done" entry (with yesterday's
+    # error text intact), confusing the UI and the operator.
+    with _eval_lock:
+        _EVAL_PROGRESS.pop((coursework_id, student_id), None)
+        _EVAL_CANCEL.pop((coursework_id, student_id), None)
+
     _eval_record(coursework_id, student_id, "queued")
 
     student_name, _submission_id, drive_file_id = _find_submission_drive_id(
@@ -1543,7 +1638,21 @@ def evaluate_one_submission(
     drive_id = upload_report(pdf_path, reports_folder_id)
 
     _eval_record(coursework_id, student_id, "tracking")
-    track_score(evaluation, reports_folder_id)
+    # Drive scores.csv is a legacy mirror — Postgres is primary. Bound this
+    # write so a slow/rate-limited Drive cannot stall the job at 95% for
+    # minutes on end (Mrinalini-class hang). Fail-soft: log + continue.
+    import concurrent.futures as _cf
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=1) as _ex:
+            _ex.submit(track_score, evaluation, reports_folder_id).result(timeout=30)
+    except _cf.TimeoutError:
+        log.warning(
+            "track_score timed out after 30s for %s/%s — Drive CSV mirror "
+            "will catch up later; Postgres row is authoritative",
+            coursework_id, student_id,
+        )
+    except Exception as exc:  # noqa: BLE001
+        log.warning("track_score failed for %s/%s: %s", coursework_id, student_id, exc)
 
     # track_score(build_row) doesn't include the freshly-uploaded report
     # location (legacy shape kept for back-compat with older callers).

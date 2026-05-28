@@ -3,7 +3,7 @@
  * rewrites /api/* to http://localhost:8000/api/* in development.
  */
 
-export type AssignmentType = "WA" | "QA" | "AA" | "ZA";
+export type AssignmentType = "WA" | "QA" | "AA" | "ZA" | "GA";
 
 export type QueueStatus =
   | "DETECTED"
@@ -50,6 +50,7 @@ export interface SubmissionAttachment {
   title: string;
   url: string | null;
   drive_id: string | null;
+  size_bytes: number | null;
 }
 
 export interface Submission {
@@ -269,6 +270,26 @@ export interface RubricResponse {
   band_labels: Record<string, string>;
 }
 
+export interface ReportComponentMeta {
+  id: string;
+  label: string;
+  category: string;
+  description: string;
+  locked: boolean;
+  default_off: boolean;
+}
+
+export interface ReportViewsResponse {
+  tiers: string[];
+  catalog: ReportComponentMeta[];
+  by_tier: Record<string, string[]>;
+  defaults: Record<string, string[]>;
+}
+
+export interface ReportViewsPut {
+  by_tier: Record<string, string[]>;
+}
+
 async function jget<T>(path: string): Promise<T> {
   const r = await fetch(path, { credentials: "include" });
   if (!r.ok) throw new Error(`${r.status} ${r.statusText} — ${path}`);
@@ -348,4 +369,9 @@ export const api = {
   tierCutoffs: () => jget<TierCutoffs>("/api/settings/tier-cutoffs"),
   setTierCutoffs: (body: TierCutoffs) =>
     jput<TierCutoffs>("/api/settings/tier-cutoffs", body),
+  reportViews: () => jget<ReportViewsResponse>("/api/settings/report-views"),
+  setReportViews: (body: ReportViewsPut) =>
+    jput<ReportViewsResponse>("/api/settings/report-views", body),
+  resetReportViews: (tier: string) =>
+    jpost<ReportViewsResponse>("/api/settings/report-views/reset", { tier }),
 };

@@ -117,7 +117,12 @@ from google_auth_oauthlib.flow import Flow
 _PENDING_FLOWS: dict[str, Flow] = {}
 _LAST_FLOW_STATE: dict[str, tuple[str, datetime]] = {}
 
-CALLBACK_URL = "http://localhost:8000/api/credentials/google_oauth/oauth-callback"
+# OAuth callback URL. Must match a registered redirect URI in
+# Google Cloud Console (APIs & Services → Credentials → OAuth 2.0
+# Client → Authorized redirect URIs). Override via API_PORT env if
+# uvicorn runs on a port other than the default 8001.
+_API_PORT = os.environ.get("API_PORT", "8001").strip() or "8001"
+CALLBACK_URL = f"http://localhost:{_API_PORT}/api/credentials/google_oauth/oauth-callback"
 
 
 def start_reauth_flow() -> tuple[str, str]:

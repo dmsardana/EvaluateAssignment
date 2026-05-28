@@ -63,3 +63,6 @@ docs/prompts/
 
 # TypeScript build info — regenerable
 web/app/tsconfig.tsbuildinfo
+
+# Rotated OAuth token backups — never commit (may still contain refresh tokens).
+token.json.expired*

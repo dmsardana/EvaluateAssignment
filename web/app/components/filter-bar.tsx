@@ -37,7 +37,21 @@ export interface FilterBarProps {
     options: BatchOption[];
     onChange: (s: string) => void;
   };
+  tier?: {
+    value: string[]; // selected tier codes; [] = all tiers
+    onChange: (next: string[]) => void;
+  };
 }
+
+// Tier choices shown in the manual-override multi-select. Keep in sync
+// with the Pydantic Tier literal in web/api/models.py.
+const TIER_OPTIONS: { key: string; label: string }[] = [
+  { key: "WA", label: "WA · Warm-up" },
+  { key: "QA", label: "QA · Qualifier" },
+  { key: "AA", label: "AA · Achiever" },
+  { key: "ZA", label: "ZA · Quiz" },
+  { key: "GA", label: "GA · Guided" },
+];
 
 export function FilterBar(props: FilterBarProps) {
   const fieldCount =
@@ -45,21 +59,24 @@ export function FilterBar(props: FilterBarProps) {
     (props.dateFrom ? 1 : 0) +
     (props.dateTo ? 1 : 0) +
     (props.course ? 1 : 0) +
-    (props.batch ? 1 : 0);
+    (props.batch ? 1 : 0) +
+    (props.tier ? 1 : 0);
   if (fieldCount === 0) return null;
   // Static class strings so Tailwind's JIT picks them up — avoids the
   // pitfall of constructing class names at runtime (would otherwise be
   // purged from the build).
   const lgColsCls =
-    fieldCount >= 5
-      ? "lg:grid-cols-5"
-      : fieldCount === 4
-        ? "lg:grid-cols-4"
-        : fieldCount === 3
-          ? "lg:grid-cols-3"
-          : fieldCount === 2
-            ? "lg:grid-cols-2"
-            : "lg:grid-cols-1";
+    fieldCount >= 6
+      ? "lg:grid-cols-6"
+      : fieldCount === 5
+        ? "lg:grid-cols-5"
+        : fieldCount === 4
+          ? "lg:grid-cols-4"
+          : fieldCount === 3
+            ? "lg:grid-cols-3"
+            : fieldCount === 2
+              ? "lg:grid-cols-2"
+              : "lg:grid-cols-1";
   return (
     <div
       className={`grid grid-cols-1 gap-3 rounded-xl border border-ink-10 bg-[rgba(24,24,27,0.55)] p-4 md:grid-cols-2 ${lgColsCls}`}
@@ -120,6 +137,19 @@ export function FilterBar(props: FilterBarProps) {
             allLabel="All classrooms"
             singularLabel="classroom"
             pluralLabel="classrooms"
+          />
+        </Field>
+      )}
+
+      {props.tier && (
+        <Field label="Tier">
+          <MultiSelectDropdown
+            options={TIER_OPTIONS}
+            values={props.tier.value}
+            onChange={props.tier.onChange}
+            allLabel="All tiers"
+            singularLabel="tier"
+            pluralLabel="tiers"
           />
         </Field>
       )}

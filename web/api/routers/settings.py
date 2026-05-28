@@ -13,12 +13,23 @@ import dotenv
 from fastapi import APIRouter, HTTPException
 
 from tools import tier_config
+from tools.report_view_config import (
+    COMPONENT_CATALOG,
+    KNOWN_COMPONENT_IDS,
+    STRUCTURAL_LOCKED,
+    defaults_for,
+)
 from web.api.models import (
+    ReportComponentMeta,
+    ReportViewsPut,
+    ReportViewsResetPost,
+    ReportViewsResponse,
     RubricDimension,
     RubricResponse,
     Thresholds,
     TierCutoffs,
 )
+from web.api.services import report_views_store
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -141,18 +152,22 @@ def get_tier_cutoffs() -> TierCutoffs:
         QA=tier_config.get_pass_pct("QA"),
         AA=tier_config.get_pass_pct("AA"),
         ZA=tier_config.get_pass_pct("ZA"),
+        GA=tier_config.get_pass_pct("GA"),
     )
 
 
 @router.put("/tier-cutoffs", response_model=TierCutoffs)
 def put_tier_cutoffs(body: TierCutoffs) -> TierCutoffs:
-    """Update WA/QA/ZA cutoffs. AA is terminal; sending a value for AA is
-    accepted but ignored (the tier config keeps it None)."""
+    """Update non-terminal-tier cutoffs (WA, QA, ZA, GA). AA is terminal
+    with no cutoff — sending a value for AA is accepted but ignored. GA
+    is terminal but carries an informational pass mark, so its cutoff
+    is editable."""
     updates: dict[str, int | None] = {
         "TIER_PASS_PCT_WA": body.WA,
         "TIER_PASS_PCT_QA": body.QA,
-        # AA is terminal — never persist a value for it.
+        # AA is terminal with no cutoff — never persist a value for it.
         "TIER_PASS_PCT_ZA": body.ZA,
+        "TIER_PASS_PCT_GA": body.GA,
     }
     try:
         for k, v in updates.items():
@@ -165,3 +180,73 @@ def put_tier_cutoffs(body: TierCutoffs) -> TierCutoffs:
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"failed to persist: {exc}")
     return get_tier_cutoffs()
+
+
+# ───────── Report view settings (per-tier component selection) ─────────
+
+_REPORT_VIEW_TIERS: list[str] = ["WA", "QA", "AA", "GA", "ZA"]
+
+
+def _catalog_payload() -> list[ReportComponentMeta]:
+    return [
+        ReportComponentMeta(
+            id=cid,
+            label=meta["label"],
+            category=meta["category"],
+            description=meta["description"],
+            locked=cid in STRUCTURAL_LOCKED,
+            default_off=meta.get("default_off", False),
+        )
+        for cid, meta in COMPONENT_CATALOG.items()
+    ]
+
+
+def _effective_by_tier() -> dict[str, list[str]]:
+    overrides = report_views_store.load_all()
+    out: dict[str, list[str]] = {}
+    for tier in _REPORT_VIEW_TIERS:
+        ids = overrides.get(tier) or defaults_for(tier)
+        merged = list(ids)
+        for loc in STRUCTURAL_LOCKED:
+            if loc not in merged:
+                merged.append(loc)
+        out[tier] = merged
+    return out
+
+
+def _defaults_by_tier() -> dict[str, list[str]]:
+    return {t: defaults_for(t) for t in _REPORT_VIEW_TIERS}
+
+
+@router.get("/report-views", response_model=ReportViewsResponse)
+def get_report_views() -> ReportViewsResponse:
+    return ReportViewsResponse(
+        tiers=list(_REPORT_VIEW_TIERS),
+        catalog=_catalog_payload(),
+        by_tier=_effective_by_tier(),
+        defaults=_defaults_by_tier(),
+    )
+
+
+@router.put("/report-views", response_model=ReportViewsResponse)
+def put_report_views(body: ReportViewsPut) -> ReportViewsResponse:
+    for tier, ids in body.by_tier.items():
+        if tier not in _REPORT_VIEW_TIERS:
+            raise HTTPException(status_code=422, detail=f"unknown tier: {tier}")
+        unknown = [i for i in ids if i not in KNOWN_COMPONENT_IDS]
+        if unknown:
+            raise HTTPException(
+                status_code=422,
+                detail=f"unknown component ids for {tier}: {unknown}",
+            )
+        merged = list(dict.fromkeys(list(ids) + list(STRUCTURAL_LOCKED)))
+        report_views_store.save(tier, merged)
+    return get_report_views()
+
+
+@router.post("/report-views/reset", response_model=ReportViewsResponse)
+def reset_report_views(body: ReportViewsResetPost) -> ReportViewsResponse:
+    if body.tier not in _REPORT_VIEW_TIERS:
+        raise HTTPException(status_code=422, detail=f"unknown tier: {body.tier}")
+    report_views_store.reset(body.tier)
+    return get_report_views()

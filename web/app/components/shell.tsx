@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ReauthBanner } from "./reauth-banner";
 import { SideNav } from "./side-nav";
 import { TopBar } from "./top-bar";
 
@@ -19,6 +20,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <TopBar onMenuClick={() => setDrawerOpen((s) => !s)} />
+      <ReauthBanner />
 
       <div className="lg:grid lg:grid-cols-[260px_1fr]">
         {/* Desktop sidenav */}

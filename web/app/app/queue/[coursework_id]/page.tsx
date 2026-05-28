@@ -40,12 +40,6 @@ export default function QueueDrawerPage({
   params: Promise<{ coursework_id: string }>;
 }) {
   const { coursework_id: id } = use(params);
-  const detailSWR = useSWR<QueueDetail>(
-    `/api/queue/${id}`,
-    () => api.queueItem(id),
-    { refreshInterval: 8_000 },
-  );
-
   const progressSWR = useSWR<EvaluationProgressResponse>(
     `/api/queue/${id}/evaluations/progress`,
     () => api.evaluationsProgress(id),
@@ -61,9 +55,25 @@ export default function QueueDrawerPage({
         const inFlight = Object.values(latest.progress).some(
           (p) => p.status && !TERMINAL.has(p.status),
         );
-        return inFlight ? 2_500 : 15_000;
+        // (a) in-flight poll at 3s; (b) stop polling once all rows reach
+        // a terminal status. User refreshes manually for a new batch.
+        return inFlight ? 3_000 : 0;
       },
     },
+  );
+
+  const TERMINAL_STATUSES = new Set(["done", "error", "failed", "cancelled"]);
+  const progressRows = progressSWR.data?.progress;
+  const anyInFlight = !progressRows
+    ? true
+    : Object.values(progressRows).some(
+        (row) => row.status && !TERMINAL_STATUSES.has(row.status),
+      );
+
+  const detailSWR = useSWR<QueueDetail>(
+    `/api/queue/${id}`,
+    () => api.queueItem(id),
+    { refreshInterval: anyInFlight ? 3_000 : 0 },
   );
 
   return (
@@ -384,18 +394,114 @@ function GenerationProgressCard({
   );
 }
 
+function CopyAllButton({ text, count }: { text: string; count: number }) {
+  const [copied, setCopied] = useState(false);
+  async function doCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={doCopy}
+      title={`Copy all ${count} errors`}
+      className="rounded-md border border-[rgba(248,113,113,0.45)] bg-black/30 px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.15em] text-ink-80 hover:bg-black/50"
+    >
+      {copied ? "✓ Copied all" : "Copy all"}
+    </button>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function doCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore — older browsers / non-secure contexts
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={doCopy}
+      title="Copy full error"
+      className="absolute right-2 top-2 z-10 rounded-md border border-[rgba(248,113,113,0.35)] bg-black/40 px-2 py-[2px] font-mono text-[10px] text-ink-80 hover:bg-black/60"
+    >
+      {copied ? "✓ Copied" : "Copy"}
+    </button>
+  );
+}
+
 function ErrorsCard({ errors }: { errors: Array<Record<string, unknown>> }) {
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const toggle = (i: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
+  const allText = errors
+    .map((e) => {
+      const at = (e as { at?: string }).at ?? "";
+      const message = (e as { message?: string }).message ?? JSON.stringify(e);
+      return at ? `[${at}]\n${message}` : message;
+    })
+    .join("\n\n────────────────────────\n\n");
+
   return (
     <div className="rounded-xl border border-[rgba(248,113,113,0.4)] bg-[rgba(248,113,113,0.06)] p-5">
-      <h3 className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-[var(--ts-red)]">
-        {errors.length} error{errors.length === 1 ? "" : "s"}
-      </h3>
-      <ul className="mt-2 space-y-1 font-mono text-[11px] text-ink-80">
-        {errors.slice(0, 5).map((e, i) => (
-          <li key={i} className="line-clamp-2">
-            {JSON.stringify(e)}
-          </li>
-        ))}
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-[var(--ts-red)]">
+          {errors.length} error{errors.length === 1 ? "" : "s"}
+        </h3>
+        <CopyAllButton text={allText} count={errors.length} />
+      </div>
+      <ul className="mt-2 space-y-2 font-mono text-[11px] text-ink-80">
+        {errors.slice(0, 10).map((e, i) => {
+          const isOpen = expanded.has(i);
+          const at = (e as { at?: string }).at;
+          const message =
+            (e as { message?: string }).message ?? JSON.stringify(e);
+          return (
+            <li
+              key={i}
+              className="rounded-md border border-[rgba(248,113,113,0.25)] bg-black/20"
+            >
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left hover:bg-black/30"
+              >
+                <span className="truncate">
+                  {at && <span className="text-ink-40">{at} — </span>}
+                  {message.split("\n")[0]}
+                </span>
+                <span className="shrink-0 text-ink-40">
+                  {isOpen ? "−" : "+"}
+                </span>
+              </button>
+              {isOpen && (
+                <div className="relative border-t border-[rgba(248,113,113,0.2)]">
+                  <CopyButton text={message} />
+                  <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words px-3 py-2 pr-16 text-[11px] leading-relaxed text-ink-80 select-text">
+                    {message}
+                  </pre>
+                </div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -499,27 +605,51 @@ function SubmissionsBody({
               ? `${selected.size} selected`
               : `${subs.length} total`}
           </span>
-          <TBtn
-            tone="lime"
-            label={
-              selected.size > 0 ? `Evaluate ${selected.size}` : "Evaluate all"
-            }
-            busy={busy === "evalSelected" || busy === "evalAll"}
-            onClick={() =>
-              selected.size > 0
-                ? evaluateSelected(false)
-                : evaluateAll(false)
-            }
-          />
-          <TBtn
-            label={
-              selected.size > 0 ? "Re-eval (force)" : "Re-eval all (force)"
-            }
-            busy={busy === "evalSelected" || busy === "evalAll"}
-            onClick={() =>
-              selected.size > 0 ? evaluateSelected(true) : evaluateAll(true)
-            }
-          />
+          {(() => {
+            const akApproved =
+              detail.status === "APPROVED" || detail.status === "SHARED";
+            const blockReason = akApproved
+              ? undefined
+              : `Answer key not approved yet (status: ${detail.status}). Generate it, review the email, and reply "OK <OTP>" first.`;
+            return (
+              <>
+                <TBtn
+                  tone="lime"
+                  label={
+                    selected.size > 0
+                      ? `Evaluate ${selected.size}`
+                      : "Evaluate all"
+                  }
+                  busy={busy === "evalSelected" || busy === "evalAll"}
+                  disabled={!akApproved}
+                  title={blockReason ?? "Evaluate the selected submissions"}
+                  onClick={() =>
+                    selected.size > 0
+                      ? evaluateSelected(false)
+                      : evaluateAll(false)
+                  }
+                />
+                <TBtn
+                  label={
+                    selected.size > 0
+                      ? "Re-eval (force)"
+                      : "Re-eval all (force)"
+                  }
+                  busy={busy === "evalSelected" || busy === "evalAll"}
+                  disabled={!akApproved}
+                  title={
+                    blockReason ??
+                    "Re-run evaluation, ignoring the cached JSON"
+                  }
+                  onClick={() =>
+                    selected.size > 0
+                      ? evaluateSelected(true)
+                      : evaluateAll(true)
+                  }
+                />
+              </>
+            );
+          })()}
           <TBtn
             tone="ghost"
             label="Abort evaluations"
@@ -533,7 +663,20 @@ function SubmissionsBody({
             label="Link all graded"
             busy={busy === "linkAll"}
             onClick={() =>
-              run("linkAll", () => api.linkAll(detail.coursework_id))
+              run("linkAll", async () => {
+                const r = (await api.linkAll(detail.coursework_id)) as {
+                  job_started?: boolean;
+                  reason?: string;
+                  total?: number;
+                };
+                if (!r?.job_started) {
+                  throw new Error(
+                    r?.reason
+                      ? `Nothing to link: ${r.reason}`
+                      : "Nothing to link",
+                  );
+                }
+              })
             }
           />
           <TBtn
@@ -541,7 +684,20 @@ function SubmissionsBody({
             label="Unlink all"
             busy={busy === "unlinkAll"}
             onClick={() =>
-              run("unlinkAll", () => api.unlinkAll(detail.coursework_id))
+              run("unlinkAll", async () => {
+                const r = (await api.unlinkAll(detail.coursework_id)) as {
+                  job_started?: boolean;
+                  reason?: string;
+                  total?: number;
+                };
+                if (!r?.job_started) {
+                  throw new Error(
+                    r?.reason
+                      ? `Nothing to unlink: ${r.reason}`
+                      : "Nothing to unlink",
+                  );
+                }
+              })
             }
           />
           {err && (
@@ -591,6 +747,11 @@ function SubmissionsBody({
                   progressEntry={progress[s.student_id]}
                   courseworkId={detail.coursework_id}
                   defaultModel={detail.model}
+                  akApproved={
+                    detail.status === "APPROVED" ||
+                    detail.status === "SHARED"
+                  }
+                  akStatus={detail.status}
                   onMutate={onMutate}
                 />
               ))}
@@ -602,6 +763,13 @@ function SubmissionsBody({
   );
 }
 
+function formatBytes(n: number | null | undefined): string {
+  if (!n || n <= 0) return "";
+  if (n < 1024) return "<1 KB";
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function SubmissionRow({
   sub,
   zebra,
@@ -610,6 +778,8 @@ function SubmissionRow({
   progressEntry,
   courseworkId,
   defaultModel,
+  akApproved,
+  akStatus,
   onMutate,
 }: {
   sub: Submission;
@@ -619,6 +789,8 @@ function SubmissionRow({
   progressEntry?: EvaluationProgressEntry;
   courseworkId: string;
   defaultModel: string | null;
+  akApproved: boolean;
+  akStatus: string;
   onMutate: () => Promise<unknown> | void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
@@ -697,24 +869,32 @@ function SubmissionRow({
           <span className="text-ink-40">—</span>
         ) : (
           <ul className="space-y-1">
-            {sub.attachments.map((a, i) => (
-              <li key={i}>
-                {a.url ? (
-                  <a
-                    href={a.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-[11px] text-[var(--cyan)] hover:text-ink-100"
-                  >
-                    {a.title} ↗
-                  </a>
-                ) : (
-                  <span className="font-mono text-[11px] text-ink-80">
-                    {a.title}
-                  </span>
-                )}
-              </li>
-            ))}
+            {sub.attachments.map((a, i) => {
+              const sz = formatBytes(a.size_bytes);
+              return (
+                <li key={i}>
+                  {a.url ? (
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-[11px] text-[var(--cyan)] hover:text-ink-100"
+                    >
+                      {a.title} ↗
+                    </a>
+                  ) : (
+                    <span className="font-mono text-[11px] text-ink-80">
+                      {a.title}
+                    </span>
+                  )}
+                  {sz && (
+                    <span className="ml-1.5 font-mono text-[10.5px] text-ink-40">
+                      ({sz})
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Td>
@@ -748,12 +928,23 @@ function SubmissionRow({
               label="Evaluate"
               tone="lime"
               busy={busy === "eval"}
+              disabled={!akApproved}
+              title={
+                akApproved
+                  ? "Evaluate this submission"
+                  : `Answer key not approved yet (status: ${akStatus}). Generate it, review the email, and reply "OK <OTP>" first.`
+              }
               onClick={() => evaluateOne(false)}
             />
           ) : (
             <IconButton
-              title="Refresh report (re-render from cached evaluation) · Shift-click to re-evaluate with the selected LLM"
+              title={
+                akApproved
+                  ? "Refresh report (re-render from cached evaluation) · Shift-click to re-evaluate with the selected LLM"
+                  : `Answer key not approved yet (status: ${akStatus}). Re-eval disabled until the AK is APPROVED.`
+              }
               busy={busy === "eval"}
+              disabled={!akApproved}
               onClick={(e) => evaluateOne(e.shiftKey)}
             >
               <RefreshIcon />
@@ -775,7 +966,9 @@ function SubmissionRow({
               on unlink. The icon's tint reflects current state. */}
           <IconButton
             title={
-              subAny.linked_at && !subAny.unlinked_at
+              !isGraded
+                ? "Evaluate this submission first — link becomes available once a report is generated"
+                : subAny.linked_at && !subAny.unlinked_at
                 ? "Revoke shared link"
                 : "Share report link with student (view-only)"
             }
@@ -814,11 +1007,15 @@ function RowAction({
   busy,
   onClick,
   tone = "default",
+  disabled,
+  title,
 }: {
   label: string;
   busy: boolean;
   onClick: () => void;
   tone?: "default" | "lime" | "ghost";
+  disabled?: boolean;
+  title?: string;
 }) {
   const cls =
     tone === "lime"
@@ -829,9 +1026,10 @@ function RowAction({
   return (
     <button
       type="button"
-      disabled={busy}
+      disabled={busy || disabled}
       onClick={onClick}
-      className={`rounded border px-2 py-[3px] font-mono text-[10.5px] uppercase tracking-[0.14em] transition disabled:opacity-50 ${cls}`}
+      title={title}
+      className={`rounded border px-2 py-[3px] font-mono text-[10.5px] uppercase tracking-[0.14em] transition disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {busy ? "…" : label}
     </button>
@@ -1279,11 +1477,15 @@ function TBtn({
   busy,
   onClick,
   tone = "default",
+  disabled,
+  title,
 }: {
   label: string;
   busy: boolean;
   onClick: () => void;
   tone?: "default" | "lime" | "ghost";
+  disabled?: boolean;
+  title?: string;
 }) {
   const cls =
     tone === "lime"
@@ -1294,9 +1496,10 @@ function TBtn({
   return (
     <button
       type="button"
-      disabled={busy}
+      disabled={busy || disabled}
       onClick={onClick}
-      className={`rounded-md border px-3 py-[6px] font-sans text-[12px] font-medium transition disabled:opacity-50 ${cls}`}
+      title={title}
+      className={`rounded-md border px-3 py-[6px] font-sans text-[12px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {busy ? "…" : label}
     </button>
