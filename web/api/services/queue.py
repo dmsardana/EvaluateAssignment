@@ -631,6 +631,15 @@ def classroom_detail(classroom, course_id: str, coursework_id: str) -> dict:
     description = cw.get("description") or ""
 
     submissions = []
+    # Per-submission usage stats from .tmp/_usage/*.jsonl (time taken,
+    # tokens, cost). Keyed by student_id; populated below when we build
+    # each submission dict. Read once per detail fetch so we don't re-walk
+    # the JSONL N times.
+    from web.api.services.usage_stats import (
+        latest_eval_by_student,
+        summarize_for_submission,
+    )
+    usage_by_student = latest_eval_by_student(coursework_id)
     # Drive client for attachment size lookups; lazy + best-effort so a
     # credential blip doesn't break the whole detail view.
     drive = None
@@ -697,6 +706,7 @@ def classroom_detail(classroom, course_id: str, coursework_id: str) -> dict:
                     "report_url": None,
                     "linked_at": None,
                     "unlinked_at": None,
+                    "usage": summarize_for_submission(usage_by_student.get(sid)),
                 }
             )
     except Exception as exc:  # noqa: BLE001
@@ -1606,6 +1616,9 @@ def evaluate_one_submission(
             "assignment_title": asgn_title,
             "submission_path": submission_path,
             "answer_key_path": answer_key_path,
+            # coursework_id flows through to tools.usage_log so
+            # /api/queue/{cid} can join per-submission stats.
+            "coursework_id": coursework_id,
         }
         try:
             evaluation = evaluate_pdf(

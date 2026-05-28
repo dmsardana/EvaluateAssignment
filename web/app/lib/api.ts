@@ -53,6 +53,15 @@ export interface SubmissionAttachment {
   size_bytes: number | null;
 }
 
+export interface SubmissionUsage {
+  ts?: string | null;
+  model?: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd_est: number;
+  duration_seconds?: number | null;
+}
+
 export interface Submission {
   student_id: string;
   student_name: string;
@@ -73,6 +82,7 @@ export interface Submission {
   report_url?: string | null;
   linked_at?: string | null;
   unlinked_at?: string | null;
+  usage?: SubmissionUsage | null;
 }
 
 export interface Material {

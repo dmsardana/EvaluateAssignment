@@ -24,6 +24,7 @@ import {
   QueueDetail,
   QuestionStatus,
   Submission,
+  SubmissionUsage,
 } from "@/lib/api";
 
 const Q_STATUS_TONE: Record<QuestionStatus, string> = {
@@ -770,6 +771,23 @@ function formatBytes(n: number | null | undefined): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// Compact one-liner shown under the Score cell: "23.4s · 76K in · 20K out · $0.53"
+// Suppresses pieces that aren't present so legacy rows (pre-stopwatch eval logs)
+// don't render "—s".
+function formatUsage(u: SubmissionUsage): string {
+  const parts: string[] = [];
+  if (u.duration_seconds != null) parts.push(`${u.duration_seconds.toFixed(1)}s`);
+  if (u.input_tokens) parts.push(`${formatTokens(u.input_tokens)} in`);
+  if (u.output_tokens) parts.push(`${formatTokens(u.output_tokens)} out`);
+  if (u.cost_usd_est) parts.push(`$${u.cost_usd_est.toFixed(2)}`);
+  return parts.join(" · ");
+}
+
+function formatTokens(n: number): string {
+  if (n < 1000) return `${n}`;
+  return `${Math.round(n / 1000)}K`;
+}
+
 function SubmissionRow({
   sub,
   zebra,
@@ -910,6 +928,14 @@ function SubmissionRow({
             {sub.graded_earned !== null && sub.graded_max !== null && (
               <span className="font-mono text-[10px] text-ink-40">
                 {sub.graded_earned.toFixed(1)}/{sub.graded_max.toFixed(0)}
+              </span>
+            )}
+            {sub.usage && (
+              <span
+                className="mt-1 font-mono text-[10px] tabular-nums text-ink-40"
+                title={sub.usage.model ?? ""}
+              >
+                {formatUsage(sub.usage)}
               </span>
             )}
           </div>

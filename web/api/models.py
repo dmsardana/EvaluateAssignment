@@ -87,6 +87,20 @@ class QueueItem(BaseModel):
 
 # ───────── Submissions on the detail view ─────────
 
+class SubmissionUsage(BaseModel):
+    """Per-submission LLM usage stats sourced from
+    .tmp/_usage/YYYY-MM-DD.jsonl (one row per evaluation). Populated by
+    web.api.services.usage_stats.latest_eval_by_student and shown in the
+    queue-detail submission card."""
+
+    ts: Optional[str] = None
+    model: Optional[str] = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd_est: float = 0.0
+    duration_seconds: Optional[float] = None
+
+
 class Submission(BaseModel):
     """One student submission in the drawer view."""
 
@@ -106,6 +120,7 @@ class Submission(BaseModel):
     report_url: Optional[str] = None
     linked_at: Optional[str] = None
     unlinked_at: Optional[str] = None
+    usage: Optional[SubmissionUsage] = None
 
 
 # ───────── Generation progress ─────────

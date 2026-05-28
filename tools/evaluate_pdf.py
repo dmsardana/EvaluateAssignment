@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -563,6 +564,12 @@ def evaluate(
     provider = (provider or "anthropic").lower()
     model = (model or "").strip() or _default_model_for(provider, meta["assignment_type"])
 
+    # Wall-clock stopwatch — covers the LLM call(s) AND every CPU step
+    # (parsing, repair, concept-map normalization, scoring) up to the
+    # _log_llm_call below. That's what the operator means by "how long
+    # did this submission take to evaluate".
+    _eval_started_at = time.monotonic()
+
     retry_call = None
     usage_records: list[dict] = []
     if provider == "anthropic":
@@ -748,12 +755,14 @@ def evaluate(
     total_in = sum(u.get("input_tokens", 0) for u in usage_records)
     total_out = sum(u.get("output_tokens", 0) for u in usage_records)
     cost_usd = _estimate_cost_usd(model, total_in, total_out)
+    duration_seconds = round(time.monotonic() - _eval_started_at, 2)
     usage_summary = {
         "provider": provider,
         "model": model,
         "input_tokens": total_in,
         "output_tokens": total_out,
         "cost_usd_est": cost_usd,
+        "duration_seconds": duration_seconds,
         "calls": usage_records,
         "submission_bytes": sub_bytes,
         "submission_kb": round(sub_bytes / 1024, 1),
@@ -779,6 +788,7 @@ def evaluate(
         submission_kb=usage_summary["submission_kb"],
         answer_key_bytes=ak_bytes,
         n_calls=len(usage_records),
+        duration_seconds=duration_seconds,
     )
     return result
 
