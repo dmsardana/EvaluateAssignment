@@ -1131,8 +1131,17 @@
   \fi
 }
 
-% \tsQrdRow{number}{topic}{concept}{attempted}{difficulty}{lo}
-% Per-question row in the QRD (Question Response Data) table.
-\newcommand{\tsQrdRow}[6]{\textbf{#1} & #2 & #3 & #4 & #5 & #6 \\}
+% Vertical struts that force minimum row heights in the QRD table.
+% Header row: 10mm tall. Body rows: 6mm minimum.
+\newcommand{\tsQrdHeaderStrut}{\rule[-3mm]{0pt}{10mm}}
+\newcommand{\tsQrdBodyStrut}{\rule[-2mm]{0pt}{6mm}}
+
+% \tsQrdRow{number}{topic}{concept}{attempted}{difficulty}{lo}{scan_quality}{scan_color}
+% 7 visible cells; the body strut keeps the row >= 6mm regardless of
+% content length. Scan quality is colored via the supplied tsGreen/
+% tsBlue/tsAmber/tsRed color name.
+\newcommand{\tsQrdRow}[8]{%
+  \tsQrdBodyStrut\textbf{#1} & #2 & #3 & #4 & #5 & #6 & {\color{#8}\textbf{#7}} \\%
+}
 
 \endinput

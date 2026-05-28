@@ -56,3 +56,13 @@ def test_qrd_rows_marks_blank_as_not_attempted():
     assert rows[0]["attempted"] is False
     assert rows[1]["attempted"] is True
     assert rows[2]["attempted"] is False
+
+
+def test_qrd_rows_includes_scan_quality_with_legacy_default():
+    ev = {"questions": [
+        {"number": 1, "scan_quality": "Poor"},
+        {"number": 2},
+    ]}
+    rows = make_qrd_rows(ev)
+    assert rows[0]["scan_quality"] == "Poor"
+    assert rows[1]["scan_quality"] == "Good"

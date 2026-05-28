@@ -175,22 +175,39 @@
 \par\vspace{0.5cm}
 \tsHone{Question Response Data}
 
-\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question classification: topic, concept, whether attempted, difficulty band, and learning objective.}}
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question classification: topic, concept, whether attempted, difficulty band, learning objective, and scan quality.}}
 
 \par\vspace{0.25cm}
 \noindent
 \begingroup
-\setlength{\tabcolsep}{6pt}%
-\renewcommand{\arraystretch}{1.25}%
+\setlength{\tabcolsep}{5pt}%
+\renewcommand{\arraystretch}{1.0}%
 \arrayrulecolor{tsLightGrey}%
 \fontsize{8.5pt}{10pt}\selectfont
-\begin{longtable}{@{}p{0.8cm}p{3.6cm}p{4.5cm}p{1.4cm}p{0.8cm}p{0.8cm}@{}}
+% Full-width QRD. Fixed widths: 0.8 + 3.8 + 1.6 + 0.7 + 0.7 + 1.5 = 9.1cm
+% + 6 tabcolsep gaps x 10pt ~= 2.1cm
+% => Concept column = \textwidth - 11.2cm (~5.8cm at the current 17cm width)
+\begin{longtable}{@{}p{0.8cm}p{3.8cm}p{\dimexpr\textwidth-11.2cm\relax}p{1.6cm}p{0.7cm}p{0.7cm}p{1.5cm}@{}}
 \hline
-{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} \\
+\tsQrdHeaderStrut
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont SCAN} \\
 \hline
 \endfirsthead
 \hline
-{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} \\
+\tsQrdHeaderStrut
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} &
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont SCAN} \\
 \hline
 \endhead
 \hline
@@ -198,7 +215,7 @@
 \hline
 \endlastfoot
 ((*- for r in qrd_rows *))
-\tsQrdRow{(((( r.number ))))}{(((( r.topic | latex_escape ))))}{(((( r.concept | latex_escape ))))}{((* if r.attempted *))Yes((* else *))No((* endif *))}{(((( r.difficulty ))))}{(((( r.learning_objective ))))}
+\tsQrdRow{(((( r.number ))))}{(((( r.topic | latex_escape ))))}{(((( r.concept | latex_escape ))))}{((* if r.attempted *))Yes((* else *))No((* endif *))}{(((( r.difficulty ))))}{(((( r.learning_objective ))))}{(((( r.scan_quality | latex_escape ))))}{(((( scan_color(r.scan_quality) ))))}
 ((*- endfor *))
 \end{longtable}
 \endgroup
