@@ -72,23 +72,34 @@
 %  PAGE 1: SUMMARY
 % ============================================================
 
+((* if "student_block" in components *))
 \tsStudentBlock{(((( student.name | latex_escape ))))}{(((( assignment.code | latex_escape )))) - (((( assignment.title | latex_escape ))))}{(((( assignment.topic | latex_escape ))))}{(((( evaluation_date_human ))))}
+((* endif *))
 
+((* if "score_block" in components *))
 \tsScoreBlock{(((( "%.1f"|format(summary.percentage) ))))\%}{(((( "%.2f"|format(summary.earned_score) ))))}{(((( summary.max_score|int ))))}{(((( summary.band | latex_escape ))))}{(((( summary.band_color ))))}{(((( summary.verdict | latex_escape ))))}
+((* endif *))
 
+((* if "attempted_note" in components *))
 ((* if summary.attempted_questions is defined and summary.attempted_questions < summary.total_questions *))
 \par\vspace{0.15cm}
 {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Note: Score is computed over all (((( summary.total_questions ))))~questions in the paper. Student attempted (((( summary.attempted_questions )))) of (((( summary.total_questions )))); the (((( summary.total_questions - summary.attempted_questions ))))~unattempted question(((* if (summary.total_questions - summary.attempted_questions) != 1 *))s((* endif *)) count as zero. Attempted-only score: (((( "%.1f"|format(100 * summary.earned_score / summary.attempted_questions if summary.attempted_questions else 0) ))))\%.}}
 ((* endif *))
+((* endif *))
 
+((* if "promotion_bar" in components *))
 ((* if summary.qualifies_for *))
 \tsPromotionBar{(((( summary.band_color ))))}{tsBgGreen}{PROMOTION:}{tsText}{(((( summary.promotion_text | latex_escape ))))}{(((( summary.promotion_note | latex_escape ))))}
 ((* else *))
 \tsPromotionBar{(((( summary.band_color ))))}{tsBgLight}{STATUS:}{tsText}{(((( summary.promotion_text | latex_escape ))))}{(((( summary.promotion_note | latex_escape ))))}
 ((* endif *))
+((* endif *))
 
+((* if "summary_box" in components *))
 \tsSummaryBox{(((( summary.summary_box | tex ))))}
+((* endif *))
 
+((* if "rubric_breakdown" in components *))
 \tsHone{Rubric Breakdown}
 
 \begin{tsRubricSplit}{(((( rubric_aggregate.concept_understanding_pct ))))}{(((( rubric_aggregate.approach_method_pct ))))}{(((( rubric_aggregate.step_by_step_pct ))))}{(((( rubric_aggregate.numerical_accuracy_pct ))))}{(((( rubric_aggregate.presentation_pct ))))}
@@ -103,10 +114,12 @@
 {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question score formula: }}%
 {\fontsize{10pt}{12pt}\selectfont $Q = 0.40 \times \mathrm{CU} + 0.20 \times \mathrm{AM} + 0.20 \times \mathrm{SS} + 0.10 \times \mathrm{NA} + 0.10 \times \mathrm{PR}$}%
 {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{, where each dimension is scored on a continuous 0--1 scale (full range used, not coarse buckets). Maximum 1.00 mark per question; aggregate over (((( summary.total_questions )))) questions.}}
+((* endif *))
 
 % ============================================================
 %  CONCEPT DEPENDENCY MAP
 % ============================================================
+((* if "concept_dependency_map" in components *))
 ((* if concept_map.concepts and concept_map.matrix *))
 \newpage
 
@@ -124,6 +137,72 @@
 \end{tsConceptMap}
 ((*- endfor *))
 ((* endif *))
+((* endif *))
+
+% ============================================================
+%  DAM MATRIX (Difficulty x Learning-Objective)
+% ============================================================
+((* if "dam_matrix" in components *))
+\needspace{6cm}
+\tsHone{Difficulty x Learning-Objective Matrix}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Question count and average percentage per (difficulty, learning-objective) bucket. Difficulty: D1 Easy / D2 Medium / D3 Difficult. Learning objective: L1 Recall / L2 Apply / L3 Analyse / L4 Create.}}
+
+\par\vspace{0.25cm}
+\noindent
+\begingroup
+\setlength{\tabcolsep}{8pt}%
+\renewcommand{\arraystretch}{1.35}%
+\arrayrulecolor{tsLightGrey}%
+\fontsize{9pt}{11pt}\selectfont
+\begin{tabular}{@{}l|cccc@{}}
+\hline
+ & {\color{tsGrey}\fontsize{8pt}{10pt}\selectfont L1 Recall} & {\color{tsGrey}\fontsize{8pt}{10pt}\selectfont L2 Apply} & {\color{tsGrey}\fontsize{8pt}{10pt}\selectfont L3 Analyse} & {\color{tsGrey}\fontsize{8pt}{10pt}\selectfont L4 Create} \\
+\hline
+((* for label, row in [("D1 Easy", dam_matrix[0]), ("D2 Medium", dam_matrix[1]), ("D3 Difficult", dam_matrix[2])] *))
+\textbf{(((( label ))))}((* for cell in row *)) & \tsDamCell{(((( cell.count ))))}{(((( "%.0f"|format(cell.avg_pct) ))))}((* endfor *)) \\
+((* endfor *))
+\hline
+\end{tabular}
+\endgroup
+((* endif *))
+
+% ============================================================
+%  QRD TABLE (Question Response Data)
+% ============================================================
+((* if "qrd_table" in components *))
+\needspace{6cm}
+\par\vspace{0.5cm}
+\tsHone{Question Response Data}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Per-question classification: topic, concept, whether attempted, difficulty band, and learning objective.}}
+
+\par\vspace{0.25cm}
+\noindent
+\begingroup
+\setlength{\tabcolsep}{6pt}%
+\renewcommand{\arraystretch}{1.25}%
+\arrayrulecolor{tsLightGrey}%
+\fontsize{8.5pt}{10pt}\selectfont
+\begin{longtable}{@{}p{0.8cm}p{3.6cm}p{4.5cm}p{1.4cm}p{0.8cm}p{0.8cm}@{}}
+\hline
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} \\
+\hline
+\endfirsthead
+\hline
+{\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont Q\#} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont TOPIC} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont CONCEPT} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont ATTEMPTED} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont D} & {\color{tsGrey}\fontsize{7.5pt}{9pt}\selectfont LO} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+((*- for r in qrd_rows *))
+\tsQrdRow{(((( r.number ))))}{(((( r.topic | latex_escape ))))}{(((( r.concept | latex_escape ))))}{((* if r.attempted *))Yes((* else *))No((* endif *))}{(((( r.difficulty ))))}{(((( r.learning_objective ))))}
+((*- endfor *))
+\end{longtable}
+\endgroup
+((* endif *))
 
 % ============================================================
 %  SUMMARY OF RUBRIC MATRIX
@@ -131,6 +210,7 @@
 %  Reintroduced from the May-14 reference format; provides a quick
 %  scan of where strengths and weak spots sit per question.
 % ============================================================
+((* if "rubric_matrix" in components *))
 ((* if questions *))
 \par\vspace{0.4cm}
 
@@ -184,10 +264,12 @@
 \end{longtable}
 \endgroup
 ((* endif *))
+((* endif *))
 
 % ============================================================
 %  MISCONCEPTIONS (conditional, between Rubric Matrix and SWOT)
 % ============================================================
+((* if "misconceptions" in components *))
 ((* if misconceptions *))
 \needspace{6cm}
 
@@ -199,10 +281,12 @@
 ((*- endfor *))
 \end{tsMisconceptions}
 ((* endif *))
+((* endif *))
 
 % ============================================================
 %  SWOT MATRIX
 % ============================================================
+((* if "swot_matrix" in components *))
 ((* if swot.strengths or swot.weaknesses *))
 \needspace{14cm}
 
@@ -230,10 +314,12 @@
 ((*- endfor *))
     }
 ((* endif *))
+((* endif *))
 
 % ============================================================
 %  AREAS OF IMPROVEMENT
 % ============================================================
+((* if "improvements" in components *))
 ((* if improvements *))
 \newpage
 
@@ -249,10 +335,12 @@
 ((*- endfor *))
 \end{tsImprovements}
 ((* endif *))
+((* endif *))
 
 % ============================================================
 %  PER-QUESTION EVALUATION
 % ============================================================
+((* if "per_question_eval" in components *))
 \newpage
 
 \tsHone{Per-Question Evaluation}
@@ -272,10 +360,12 @@
 \begin{tsQCard}{(((( q.number ))))}{(((( q.topic | tex ))))}{(((( q.scan_quality ))))}{(((( scan_color(q.scan_quality) ))))}{(((( "%.2f"|format(q.weighted_score) ))))}{1.00}
 \end{tsQCard}
 ((*- endfor *))
+((* endif *))
 
 % ============================================================
 %  CLOSING NOTE
 % ============================================================
+((* if "closing_note" in components *))
 ((* if closing_note *))
 \newpage
 
@@ -299,6 +389,7 @@
 \end{tspoints}
 ((* endif *))
 ((* endif *))
+((* endif *))
 
 \tsDisclaimer
 
@@ -309,6 +400,7 @@
 % ============================================================
 %  SCAN QUALITY OVERVIEW
 % ============================================================
+((* if "scan_overview" in components *))
 \newpage
 
 \tsHone{Scan Quality Overview}
@@ -317,7 +409,9 @@ Across the (((( summary.total_questions ))))~questions: \textbf{\color{tsGreen}E
 
 \par\vspace{0.1cm}
 {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Scan quality affects how reliably the work can be evaluated. Each question's scan quality is logged on its individual card. The tips below help you raise scan quality in future submissions.}}
+((* endif *))
 
+((* if "scan_tips" in components *))
 \par\vspace{0.5cm}
 \tsHone{Scanning Tips for Future Submissions}
 
@@ -328,6 +422,7 @@ Across the (((( summary.total_questions ))))~questions: \textbf{\color{tsGreen}E
 ((* if summary.scan_quality_note is defined and summary.scan_quality_note *))
 \par\vspace{0.2cm}
 {\fontsize{9pt}{12pt}\selectfont\color{tsText}\textbf{Specific to your (((( assignment.code | latex_escape )))) submission:} (((( summary.scan_quality_note | tex ))))}
+((* endif *))
 ((* endif *))
 
 \end{document}

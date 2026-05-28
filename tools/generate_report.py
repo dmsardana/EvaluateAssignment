@@ -275,6 +275,77 @@ def _title_case_name(name: str) -> str:
     return "".join(titled).strip() or "Student"
 
 
+def make_dam_matrix(evaluation: dict) -> list[list[dict]]:
+    """3x4 grid (rows=D1..D3, cols=L1..L4). Each cell: {count, avg_pct}.
+
+    Aggregates per-question scores by difficulty x learning-objective.
+    Cells with no questions return count=0, avg_pct=0.0 — the LaTeX
+    macro renders them muted.
+    """
+    rows = ["D1", "D2", "D3"]
+    cols = ["L1", "L2", "L3", "L4"]
+    grid: list[list[dict]] = [
+        [{"count": 0, "sum_pct": 0.0} for _ in cols] for _ in rows
+    ]
+    for q in evaluation.get("questions") or []:
+        d = q.get("difficulty") or "D2"
+        lo = q.get("learning_objective") or "L2"
+        if d not in rows or lo not in cols:
+            continue
+        # Prefer the 0..1 `score` if present; else derive from dimensions.
+        score = q.get("score")
+        if score is None:
+            dims = q.get("dimensions") or {}
+            ds = [
+                (dims.get(k) or {}).get("score", 0) or 0
+                for k in (
+                    "concept_understanding", "approach_method",
+                    "step_by_step", "numerical_accuracy", "presentation",
+                )
+            ]
+            score = (sum(ds) / 5.0) if ds else 0.0
+        score = float(score)
+        cell = grid[rows.index(d)][cols.index(lo)]
+        cell["count"] += 1
+        cell["sum_pct"] += 100.0 * score
+    out: list[list[dict]] = []
+    for r in grid:
+        out.append([
+            {
+                "count": c["count"],
+                "avg_pct": (c["sum_pct"] / c["count"]) if c["count"] else 0.0,
+            }
+            for c in r
+        ])
+    return out
+
+
+def make_qrd_rows(evaluation: dict) -> list[dict]:
+    """Flat per-question rows for the QRD (Question Response Data) table."""
+    out: list[dict] = []
+    for q in evaluation.get("questions") or []:
+        attempted_raw = q.get("attempted")
+        if attempted_raw is None:
+            ya = q.get("your_answer")
+            if ya is None:
+                # Field absent (legacy data) — assume attempted.
+                attempted = True
+            else:
+                ya_norm = ya.strip().lower()
+                attempted = ya_norm not in ("", "(blank)", "blank")
+        else:
+            attempted = bool(attempted_raw)
+        out.append({
+            "number": q.get("number"),
+            "topic": q.get("topic", ""),
+            "concept": q.get("concept") or q.get("topic", ""),
+            "attempted": attempted,
+            "difficulty": q.get("difficulty") or "D2",
+            "learning_objective": q.get("learning_objective") or "L2",
+        })
+    return out
+
+
 def generate(evaluation: dict) -> str:
     env = build_jinja_env()
     template = env.get_template(TEMPLATE_NAME)
@@ -302,6 +373,12 @@ def generate(evaluation: dict) -> str:
         "feedback": "",
         "scan_quality": "Good",
         "scan_note": "",
+        # Per-tier-report-views fields. Legacy cached evaluations lack
+        # these — defaults keep the renderer happy until the next re-eval
+        # populates real classifications.
+        "difficulty": "D2",
+        "learning_objective": "L2",
+        "concept": "",
     }
     for q in evaluation.get("questions") or []:
         dims = q.get("dimensions") or {}
@@ -322,6 +399,9 @@ def generate(evaluation: dict) -> str:
                 merged[k] = default
         questions_for_template.append(merged)
 
+    from tools.report_view_config import view_for
+    components = view_for(evaluation["assignment"]["type"])
+
     context = {
         **evaluation,
         "student": student_display,
@@ -333,6 +413,9 @@ def generate(evaluation: dict) -> str:
         "concept_map_blocks": cm_blocks,
         "concept_map_header": cm_header,
         "concept_map_row": cm_row,
+        "components": components,
+        "dam_matrix": make_dam_matrix(evaluation),
+        "qrd_rows": make_qrd_rows(evaluation),
     }
 
     tex_source = template.render(**context)
