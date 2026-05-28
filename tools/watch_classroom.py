@@ -19,18 +19,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
 
+from tools.tier_config import KNOWN_TIERS
+
 ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
 SCORES_FILENAME = "scores.csv"
 
 log = logging.getLogger(__name__)
 
 # Order matters — longer keywords first to win against shorter substring matches.
+# Bare two-letter codes are appended from KNOWN_TIERS so adding a new
+# tier (e.g. "GA") only requires touching tier_config.TIER_CONFIG.
 TYPE_MAP = [
     ("WARM-UP", "WA"), ("WARM UP", "WA"), ("WARM", "WA"),
     ("QUALIFIER", "QA"), ("QUALIFYING", "QA"),
     ("ACHIEVERS", "AA"), ("ACHIEVER", "AA"),
     ("QUIZ", "ZA"),
-    ("WA", "WA"), ("QA", "QA"), ("AA", "AA"), ("ZA", "ZA"),
+    ("GUIDED", "GA"),
+    *[(t, t) for t in KNOWN_TIERS],
 ]
 
 # Match the parenthetical "(Code: TYPE IDENTIFIER ...)"
@@ -41,9 +46,12 @@ INLINE_CODE_RE = re.compile(
     r"\bCode\s*[:\-]?\s*([A-Za-z][\w\-]*)",
     re.IGNORECASE,
 )
-# Match free-form "Type WA" / "Type: QA" / "[QA]" etc.
+# Match free-form "Type WA" / "Type: QA" / "[QA]" etc. — alternation
+# derived from KNOWN_TIERS so any tier added to tier_config is parsed
+# automatically without touching this regex.
+_TIER_ALT = "|".join(re.escape(t) for t in KNOWN_TIERS)
 INLINE_TYPE_RE = re.compile(
-    r"\bType\s*[:\-]?\s*(WA|QA|AA|ZA)\b|\[(WA|QA|AA|ZA)\]",
+    rf"\bType\s*[:\-]?\s*({_TIER_ALT})\b|\[({_TIER_ALT})\]",
     re.IGNORECASE,
 )
 
@@ -68,7 +76,7 @@ def parse_assignment_meta(title: str) -> tuple[str, str]:
         tokens = inner.split()
         if tokens:
             first_upper = tokens[0].upper()
-            if first_upper in {"WA", "QA", "AA", "ZA"}:
+            if first_upper in set(KNOWN_TIERS):
                 code = "_".join(tokens[1:]).upper() if len(tokens) > 1 else "UNCODED"
                 return first_upper, code
             code = "_".join(tokens).upper()

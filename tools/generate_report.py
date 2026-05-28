@@ -25,12 +25,20 @@ TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 TEMPLATE_NAME = "report_template.tex"
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", ".tmp", "reports")
 
-# Tier name lookup
-TIER_FULL_NAME = {
+# Tier long-form names shown on the report cover. Sourced from
+# tier_config.TIER_CONFIG so any new tier appears automatically; the
+# override map preserves legacy possessives ("Qualifier's") that
+# tier_config doesn't track.
+from tools.tier_config import KNOWN_TIERS, tier_label
+
+_TIER_FULL_NAME_OVERRIDES = {
     "WA": "Warm-Up",
     "QA": "Qualifier's",
     "AA": "Achiever's",
     "ZA": "Quiz",
+}
+TIER_FULL_NAME = {
+    t: _TIER_FULL_NAME_OVERRIDES.get(t, tier_label(t)) for t in KNOWN_TIERS
 }
 
 # ── LaTeX escape (conservative — DO NOT escape $, {, }, \\ since solutions contain math) ──
@@ -39,6 +47,8 @@ _LATEX_ESCAPE_MAP = {
     "%": r"\%",
     "#": r"\#",
     "_": r"\_",
+    "^": r"\textasciicircum{}",
+    "~": r"\textasciitilde{}",
 }
 _LATEX_ESCAPE_RE = re.compile("|".join(re.escape(k) for k in _LATEX_ESCAPE_MAP))
 
@@ -46,6 +56,29 @@ _LATEX_ESCAPE_RE = re.compile("|".join(re.escape(k) for k in _LATEX_ESCAPE_MAP))
 def latex_escape(text) -> str:
     """For metadata strings (names, titles, breadcrumbs) — keeps math intact."""
     return _LATEX_ESCAPE_RE.sub(lambda m: _LATEX_ESCAPE_MAP[m.group()], str(text or ""))
+
+
+# Math-aware escape: only escape specials OUTSIDE $...$ regions. LLM prose
+# fields (summary_box, feedback, swot evidence, closing note) routinely
+# contain `%` for percentages, `&` for "Q1 & Q2", `#` for hashes, `_` for
+# variable names — every one of which silently breaks LaTeX. A blind escape
+# would corrupt inline math `$f_n(x)$`; this preserves math regions verbatim.
+def latex_escape_safe(text) -> str:
+    """Escape LaTeX specials in prose while preserving $...$ math regions."""
+    if not text:
+        return ""
+    s = str(text)
+    # Split on $...$ — even-indexed parts are prose, odd-indexed are math.
+    parts = re.split(r'(\$[^$]*\$)', s)
+    out = []
+    for i, p in enumerate(parts):
+        if i % 2 == 1:  # math region — leave alone
+            out.append(p)
+        else:
+            out.append(_LATEX_ESCAPE_RE.sub(
+                lambda m: _LATEX_ESCAPE_MAP[m.group()], p
+            ))
+    return "".join(out)
 
 
 # ── Helper functions exposed to the template ─────────────────────────────────
@@ -84,27 +117,47 @@ def scan_color(quality: str) -> str:
     }.get(quality, "tsBlue")
 
 
-def make_concept_map_helpers(evaluation: dict):
-    """Builds two callables for the template: header-row and per-concept-row LaTeX."""
+def make_concept_map_helpers(evaluation: dict, block_size: int = 25):
+    """Builds block descriptors + parameterized header/row callables for the
+    Concept Dependency Map.
+
+    The map can have 50+ questions in an AA paper. Rendering all of them as
+    a single horizontal tabular spills off the page. We chunk the columns
+    into blocks of ``block_size`` (default 25) and the template renders one
+    tsConceptMap environment per block.
+
+    Returns ``(blocks, header_fn, row_fn)`` where:
+      - blocks: list of dicts {start, end, count} (1-based, inclusive)
+      - header_fn(start, end) → LaTeX header cells for that slice
+      - row_fn(concept_index, start, end) → LaTeX row cells for that slice
+    """
     cm = evaluation.get("concept_map", {}) or {}
     n = evaluation.get("summary", {}).get("total_questions", 0)
     matrix = cm.get("matrix", []) or []
     cell_macro = {"G": r"\tsCG", "A": r"\tsCA", "R": r"\tsCR", "N": r"\tsCN"}
 
-    def header() -> str:
-        return " &".join(rf"\tsCH{{{i+1}}}" for i in range(n))
+    blocks: list[dict] = []
+    start = 1
+    while start <= n:
+        end = min(start + block_size - 1, n)
+        blocks.append({"start": start, "end": end, "count": end - start + 1})
+        start = end + 1
 
-    def row(concept_index: int) -> str:
+    def header(start: int, end: int) -> str:
+        return " &".join(rf"\tsCH{{{i}}}" for i in range(start, end + 1))
+
+    def row(concept_index: int, start: int, end: int) -> str:
+        slice_len = end - start + 1
         if concept_index >= len(matrix):
-            return " &".join([r"\tsCN"] * n)
+            return " &".join([r"\tsCN"] * slice_len)
         row_cells = matrix[concept_index]
         out = []
-        for i in range(n):
+        for i in range(start - 1, end):
             c = row_cells[i] if i < len(row_cells) else "N"
             out.append(cell_macro.get((c or "N").upper(), r"\tsCN"))
         return " &".join(out)
 
-    return header(), row
+    return blocks, header, row
 
 
 # ── Jinja2 setup ───────────────────────────────────────────────────────────────
@@ -122,6 +175,7 @@ def build_jinja_env() -> jinja2.Environment:
         lstrip_blocks=True,
     )
     env.filters["latex_escape"] = latex_escape
+    env.filters["tex"] = latex_escape_safe
     env.globals["pct"] = pct
     env.globals["status_color"] = status_color
     env.globals["status_label"] = status_label
@@ -231,7 +285,7 @@ def generate(evaluation: dict) -> str:
     eval_date = evaluation.get("evaluation_date", _dt.date.today().isoformat())
     base_name = f"{student_clean}_{evaluation['assignment']['code']}_{eval_date}_Report"
 
-    cm_header, cm_row = make_concept_map_helpers(evaluation)
+    cm_blocks, cm_header, cm_row = make_concept_map_helpers(evaluation)
 
     # Override the student.name with the title-cased version for display only
     student_display = {**evaluation["student"], "name": display_name}
@@ -240,6 +294,15 @@ def generate(evaluation: dict) -> str:
     # Summary of Rubric Matrix can render with one number per row and sort by
     # it. Keeps the JSON shape unchanged for cached evaluations.
     questions_for_template = []
+    _STRING_FIELD_DEFAULTS = {
+        "topic": "",
+        "function_latex": "",
+        "your_answer": "(blank)",
+        "expected_answer": "",
+        "feedback": "",
+        "scan_quality": "Good",
+        "scan_note": "",
+    }
     for q in evaluation.get("questions") or []:
         dims = q.get("dimensions") or {}
         scores = [
@@ -253,7 +316,11 @@ def generate(evaluation: dict) -> str:
             )
         ]
         avg_pct = int(round((sum(scores) / 5.0) * 100)) if scores else 0
-        questions_for_template.append({**q, "avg_pct": avg_pct})
+        merged = {**_STRING_FIELD_DEFAULTS, **q, "avg_pct": avg_pct}
+        for k, default in _STRING_FIELD_DEFAULTS.items():
+            if merged.get(k) is None:
+                merged[k] = default
+        questions_for_template.append(merged)
 
     context = {
         **evaluation,
@@ -263,6 +330,7 @@ def generate(evaluation: dict) -> str:
             evaluation["assignment"]["type"], evaluation["assignment"]["type"]
         ),
         "evaluation_date_human": _human_date(eval_date),
+        "concept_map_blocks": cm_blocks,
         "concept_map_header": cm_header,
         "concept_map_row": cm_row,
     }

@@ -67,9 +67,9 @@
 ]
 \begin{enumerate}[leftmargin=2.2em, label={\bfseries Q\arabic*.}]
 ((*- for q in questions *))
-  \item \textbf{Final answer:} (((( q.final_answer ))))
+  \item \textbf{Final answer:} (((( q.final_answer | latex_sanitize ))))
   \\[2pt]
-  \textit{Key steps:} (((( q.concise ))))
+  \textit{Key steps:} (((( q.concise | latex_sanitize ))))
 ((*- endfor *))
 \end{enumerate}
 \end{tcolorbox}
@@ -89,18 +89,18 @@
 ]
 
 \textbf{Question:} \\
-(((( q.question_text ))))
+(((( q.question_text | latex_sanitize ))))
 
 \medskip
 \textbf{Approach:} \\
-(((( q.approach ))))
+(((( q.approach | latex_sanitize ))))
 
 \medskip
 \textbf{Solution:} \\
-(((( q.solution ))))
+(((( q.solution | latex_sanitize ))))
 
 \medskip
-\textbf{\color{conciseGreen}Final Answer:} (((( q.final_answer ))))
+\textbf{\color{conciseGreen}Final Answer:} (((( q.final_answer | latex_sanitize ))))
 
 ((* if q.common_mistakes *))
 \medskip

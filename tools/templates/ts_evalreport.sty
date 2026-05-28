@@ -32,6 +32,8 @@
 \RequirePackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
 \RequirePackage{enumitem}
+\RequirePackage{multicol}        % two-column Scanning Tips list
+\RequirePackage{adjustbox}       % max width=\linewidth — scale-down for overlong math
 \RequirePackage{xfp}             % \fpeval — used by \tsDimBoxAuto to show weight × score
 \RequirePackage{siunitx}         % \num{...} — fixed-decimal formatting for weighted scores
 \sisetup{
@@ -43,6 +45,7 @@
 }
 \RequirePackage{array}
 \RequirePackage{tabularx}
+\RequirePackage{longtable}
 \RequirePackage{colortbl}
 \RequirePackage{graphicx}
 \RequirePackage{tikz}
@@ -524,20 +527,15 @@
     % Header row: Q# + function on left, score on right
     \noindent
     \begin{minipage}[t]{0.78\linewidth}\raggedright%
-        % Render Q# and function with a fade overlay on the function tail.
-        % The Q# label stays solid; the function text fades to white over its right portion.
-        % The fade rectangle spans the full minipage width so short Qs stay mostly readable
-        % and long Qs get progressively obscured.
+        % Render Q# inline with the function. Overlong inline-math expressions
+        % (e.g. Q15-style four-sub-question lists) cannot word-wrap in LaTeX,
+        % so we use adjustbox `max width' to scale them down to the minipage
+        % width — small expressions render at natural size, oversized ones
+        % shrink instead of bleeding into the right-side score block.
         {\fontsize{11pt}{13pt}\selectfont\color{tsRed}\textbf{Q#1.}\ \ }%
-        \begin{tikzpicture}[baseline=(qfunc.base)]
-            \node[inner sep=0pt, anchor=base west, text=tsText,
-                  font=\fontsize{11pt}{13pt}\selectfont] (qfunc) at (0,0)
-                {\tsQFuncContent};
-            % Fade rectangle covers the natural text width.
-            % path fading=tsQFade goes from transparent (left) to opaque (right).
-            \fill[white, path fading=tsQFade]
-                ([xshift=-2pt]qfunc.south west) rectangle ([xshift=2pt]qfunc.north east);
-        \end{tikzpicture}%
+        \adjustbox{max width=0.93\linewidth, valign=B}{%
+            {\fontsize{11pt}{13pt}\selectfont\color{tsText}\tsQFuncContent}%
+        }%
     \end{minipage}\hfill%
     \begin{minipage}[t]{0.20\linewidth}\raggedleft%
         {\fontsize{14pt}{16pt}\selectfont\color{tsRed}\textbf{#5}\fontsize{8pt}{10pt}\selectfont\color{tsGrey}\ /\ #6}%
@@ -721,10 +719,11 @@
 %       {<T bullets in tspoints>}
 %   \end{tsSWOT}
 % Each quadrant takes a list of \item bullets (use \tsSWOTpoint{title}{body})
-\newcommand{\tsSWOTbox}[3]{%
+\newcommand{\tsSWOTbox}[4]{%
     % #1: header label (e.g. "STRENGTHS")
     % #2: header color
     % #3: body content (list of \tsSWOTpoint items)
+    % #4: equal-height group key (row-scoped) for dynamic sizing
     \begin{tcolorbox}[
         enhanced,
         colback=white, colframe=#2,
@@ -732,7 +731,7 @@
         left=8pt, right=8pt, top=4pt, bottom=8pt,
         before skip=0pt, after skip=0pt,
         nobeforeafter,
-        height=7.5cm,
+        equal height group=#4,
         valign=top
     ]
         % Inline header bar (no floating title - keeps everything inside the box bounds)
@@ -778,22 +777,22 @@
 %       {\tsSWOTpoint{...}{...}}
 \newcommand{\tsSWOT}[4]{%
     \par\vspace{0.3cm}\noindent
-    % Top row: Strengths (left) + Weaknesses (right)
+    % Top row: Strengths (left) + Weaknesses (right) — equal height grows with content
     \begin{minipage}[t]{8.3cm}
-        \tsSWOTbox{STRENGTHS}{tsGreen}{#1}
+        \tsSWOTbox{STRENGTHS}{tsGreen}{#1}{swotrowSW}
     \end{minipage}%
     \hfill%
     \begin{minipage}[t]{8.3cm}
-        \tsSWOTbox{WEAKNESSES}{tsRed}{#2}
+        \tsSWOTbox{WEAKNESSES}{tsRed}{#2}{swotrowSW}
     \end{minipage}
     \par\vspace{0.4cm}\noindent
-    % Bottom row: Opportunities (left) + Threats (right)
+    % Bottom row: Opportunities (left) + Threats (right) — equal height grows with content
     \begin{minipage}[t]{8.3cm}
-        \tsSWOTbox{OPPORTUNITIES}{tsBlue}{#3}
+        \tsSWOTbox{OPPORTUNITIES}{tsBlue}{#3}{swotrowOT}
     \end{minipage}%
     \hfill%
     \begin{minipage}[t]{8.3cm}
-        \tsSWOTbox{THREATS}{tsAmber}{#4}
+        \tsSWOTbox{THREATS}{tsAmber}{#4}{swotrowOT}
     \end{minipage}
     \par
 }
@@ -1066,6 +1065,54 @@
     \par\vspace{0.1cm}
     {\fontsize{8pt}{10pt}\selectfont\color{tsGrey}Mohit Sardana \ \textperiodcentered\ Mathematics Mentor
     \ \textperiodcentered\ ThinkingSouls Education \ \textperiodcentered\ thinkingsouls.com}
+}
+
+% ===== Scanning Tips for Future Submissions =====
+% Bordered 5x2 tabular. Each cell shows the tip number in its own 0.55cm
+% gutter on the left; the tip text starts after the gutter and wraps with
+% a hanging indent so wrapped lines align with the title, NOT under the
+% number — matching the May-14 reference layout.
+% Inner mini-tabular per cell: 8mm number gutter + 7.4cm text column.
+% Text column has its own physical left edge at 8mm, so every wrapped
+% line aligns at 8mm — true hanging indentation by table geometry.
+% 9pt font on 14pt baseline = 3pt extra interline leading.
+\newcommand{\tsScanningTipItem}[2]{%
+    \fontsize{9pt}{14pt}\selectfont\color{tsText}%
+    \begin{tabular}{@{}p{8mm}@{}>{\raggedright\arraybackslash}p{7.4cm}@{}}
+        \textbf{#1.} & #2
+    \end{tabular}%
+}
+% Outer table: total 17cm = 2 x 8.5cm cells (8.2cm p{} + 2 x 1.5mm
+% tabcolsep padding = 8.5cm visible). arraystretch 1.4 → ~6pt extra row
+% spacing for the paragraph gap.
+\newcommand{\tsScanningTips}{%
+    \par\vspace{0.2cm}\noindent
+    \setlength{\tabcolsep}{1.5mm}%
+    \renewcommand{\arraystretch}{1.07}%
+    \arrayrulecolor{tsLightGrey}%
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{8.2cm}|>{\raggedright\arraybackslash}p{8.2cm}|}
+        \hline
+        \tsScanningTipItem{1}{Keep fingers and thumbs out of frame. Hold the page from a corner that's outside the camera view, or use a flat surface and weights (books on the corners). Thumbs in the frame block content and make pages look unprofessional.}
+        &
+        \tsScanningTipItem{6}{Number every question clearly. Write the question number large at the start of each answer (e.g.\ Q7.). If you skip a question and come back to it, mark it — don't leave the evaluator hunting.}
+        \\\hline
+        \tsScanningTipItem{2}{One page per image. Don't capture two notebook pages in one shot. Each question's working should be readable without zooming. If a question spans two pages, that's fine — just take two clean shots.}
+        &
+        \tsScanningTipItem{7}{Box your final answer. A clear final-answer box at the end of each question saves the evaluator from reading the entire derivation just to find your conclusion.}
+        \\\hline
+        \tsScanningTipItem{3}{Even, indirect lighting. Avoid direct sunlight or a single overhead lamp — both create shadows or glare strips. Diffuse light from a window (no direct sun) or a desk lamp aimed at the wall works best.}
+        &
+        \tsScanningTipItem{8}{Use a scanner app, not raw photos. Apps like Adobe Scan, Microsoft Lens, or CamScanner auto-correct perspective, sharpen text, and compile pages into a single PDF in question order.}
+        \\\hline
+        \tsScanningTipItem{4}{Page flat, camera straight overhead. A skewed page distorts the math. Use a clipboard or hardback book underneath to flatten the page, and hold the camera parallel to the page (not at an angle).}
+        &
+        \tsScanningTipItem{9}{Check page order before exporting. After scanning, flip through the PDF once. Make sure pages run Q1 $\rightarrow$ Q2 $\rightarrow \ldots \rightarrow$ last, with no missing pages and no sideways shots.}
+        \\\hline
+        \tsScanningTipItem{5}{Use a darker pen. Pencil and very light blue ink fade in scans. A regular blue or black ballpoint or gel pen (0.5\,mm or thicker) gives the best contrast.}
+        &
+        \tsScanningTipItem{10}{Name the file clearly. Format: BatchName\_StudentName\_\linebreak AssignmentCode.pdf. Don't use generic names like ``Scan001.pdf'' — they get lost.}
+        \\\hline
+    \end{tabular}\par
 }
 
 \endinput

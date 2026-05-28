@@ -76,13 +76,18 @@
 
 \tsScoreBlock{(((( "%.1f"|format(summary.percentage) ))))\%}{(((( "%.2f"|format(summary.earned_score) ))))}{(((( summary.max_score|int ))))}{(((( summary.band | latex_escape ))))}{(((( summary.band_color ))))}{(((( summary.verdict | latex_escape ))))}
 
+((* if summary.attempted_questions is defined and summary.attempted_questions < summary.total_questions *))
+\par\vspace{0.15cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Note: Score is computed over all (((( summary.total_questions ))))~questions in the paper. Student attempted (((( summary.attempted_questions )))) of (((( summary.total_questions )))); the (((( summary.total_questions - summary.attempted_questions ))))~unattempted question(((* if (summary.total_questions - summary.attempted_questions) != 1 *))s((* endif *)) count as zero. Attempted-only score: (((( "%.1f"|format(100 * summary.earned_score / summary.attempted_questions if summary.attempted_questions else 0) ))))\%.}}
+((* endif *))
+
 ((* if summary.qualifies_for *))
 \tsPromotionBar{(((( summary.band_color ))))}{tsBgGreen}{PROMOTION:}{tsText}{(((( summary.promotion_text | latex_escape ))))}{(((( summary.promotion_note | latex_escape ))))}
 ((* else *))
 \tsPromotionBar{(((( summary.band_color ))))}{tsBgLight}{STATUS:}{tsText}{(((( summary.promotion_text | latex_escape ))))}{(((( summary.promotion_note | latex_escape ))))}
 ((* endif *))
 
-\tsSummaryBox{(((( summary.summary_box ))))}
+\tsSummaryBox{(((( summary.summary_box | tex ))))}
 
 \tsHone{Rubric Breakdown}
 
@@ -109,12 +114,15 @@
 
 \par {\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Which underlying concepts each question tests, colored by your performance. Green = full, Amber = partial, Red = failed, Grey = not tested.}}
 
-\begin{tsConceptMap}{(((( summary.total_questions ))))}
-    \tsConceptMapHeader{(((( concept_map_header ))))}
+((*- for block in concept_map_blocks *))
+((* if not loop.first *))\par\vspace{0.35cm}{\fontsize{8.5pt}{11pt}\selectfont\color{tsGrey}\textit{Questions (((( block.start ))))--(((( block.end ))))}}\par\vspace{0.15cm}((* endif *))
+\begin{tsConceptMap}{(((( block.count ))))}
+    \tsConceptMapHeader{(((( concept_map_header(block.start, block.end) ))))}
 ((*- for concept in concept_map.concepts *))
-    \tsConceptRow{(((( concept | latex_escape ))))}{(((( concept_map_row(loop.index0) ))))}
+    \tsConceptRow{(((( concept | latex_escape ))))}{(((( concept_map_row(loop.index0, block.start, block.end) ))))}
 ((*- endfor *))
 \end{tsConceptMap}
+((*- endfor *))
 ((* endif *))
 
 % ============================================================
@@ -137,9 +145,11 @@
 \renewcommand{\arraystretch}{1.35}%
 \arrayrulecolor{tsLightGrey}%
 \fontsize{8.5pt}{10pt}\selectfont
-\begin{tabular}{@{}l*{6}{>{\centering\arraybackslash}p{1.7cm}}@{}}
+\newcommand{\tsRubricHeaderStrut}{\rule[-3mm]{0pt}{10mm}}%
+\newcommand{\tsRubricBodyStrut}{\rule[-1.5mm]{0pt}{6mm}}%
+\begin{longtable}{@{}p{1.1cm}*{6}{>{\centering\arraybackslash}p{2.32cm}}@{}}
 \hline
-{\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} Q. NO.} &
+\tsRubricHeaderStrut {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} Q. NO.} &
 {\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{CONCEPTUAL\\UNDERSTANDING}} &
 {\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{APPROACH\\\&\ METHOD}} &
 {\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{STEP-BY-STEP\\EXECUTION}} &
@@ -147,8 +157,23 @@
 {\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{PRESENTATION\\\&\ CLARITY}} &
 {\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{AVERAGE\\SCORE}} \\
 \hline
+\endfirsthead
+\hline
+\tsRubricHeaderStrut {\fontsize{7.5pt}{9pt}\selectfont\color{tsGrey} Q. NO.} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{CONCEPTUAL\\UNDERSTANDING}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{APPROACH\\\&\ METHOD}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{STEP-BY-STEP\\EXECUTION}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{NUMERICAL\\ACCURACY}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{PRESENTATION\\\&\ CLARITY}} &
+{\fontsize{7pt}{8.5pt}\selectfont\color{tsGrey} \shortstack{AVERAGE\\SCORE}} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
 ((*- for q in questions | sort(attribute='avg_pct', reverse=True) *))
-\textbf{(((( q.number ))))} &
+\tsRubricBodyStrut \textbf{(((( q.number ))))} &
 {\color{(((( status_color(pct(q.dimensions.concept_understanding.score)) ))))}\textbf{(((( pct(q.dimensions.concept_understanding.score) ))))\%}} &
 {\color{(((( status_color(pct(q.dimensions.approach_method.score)) ))))}\textbf{(((( pct(q.dimensions.approach_method.score) ))))\%}} &
 {\color{(((( status_color(pct(q.dimensions.step_by_step.score)) ))))}\textbf{(((( pct(q.dimensions.step_by_step.score) ))))\%}} &
@@ -156,8 +181,7 @@
 {\color{(((( status_color(pct(q.dimensions.presentation.score)) ))))}\textbf{(((( pct(q.dimensions.presentation.score) ))))\%}} &
 {\color{(((( status_color(q.avg_pct) ))))}\textbf{(((( q.avg_pct ))))\%}} \\
 ((*- endfor *))
-\hline
-\end{tabular}
+\end{longtable}
 \endgroup
 ((* endif *))
 
@@ -171,7 +195,7 @@
 
 \begin{tsMisconceptions}
 ((*- for m in misconceptions *))
-    \tsMisconception{(((( m.title | latex_escape ))))}{(((( m.evidence | latex_escape ))))}{(((( m.wrong_model ))))}{(((( m.correct_model ))))}
+    \tsMisconception{(((( m.title | latex_escape ))))}{(((( m.evidence | tex ))))}{(((( m.wrong_model | tex ))))}{(((( m.correct_model | tex ))))}
 ((*- endfor *))
 \end{tsMisconceptions}
 ((* endif *))
@@ -187,22 +211,22 @@
 \tsSWOT
     {
 ((*- for p in swot.strengths *))
-        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence ))))}
+        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence | tex ))))}
 ((*- endfor *))
     }
     {
 ((*- for p in swot.weaknesses *))
-        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence ))))}
+        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence | tex ))))}
 ((*- endfor *))
     }
     {
 ((*- for p in swot.opportunities *))
-        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence ))))}
+        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence | tex ))))}
 ((*- endfor *))
     }
     {
 ((*- for p in swot.threats *))
-        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence ))))}
+        \tsSWOTpoint{(((( p.title | latex_escape ))))}{(((( p.evidence | tex ))))}
 ((*- endfor *))
     }
 ((* endif *))
@@ -218,9 +242,9 @@
 \begin{tsImprovements}
 ((*- for imp in improvements *))
     \tsImprove{(((( imp.priority ))))}{(((( imp.label | latex_escape ))))}{(((( imp.color ))))}%
-        {(((( imp.title | latex_escape ))))}%
-        {(((( imp.action ))))}%
-        {(((( imp.measure ))))}%
+        {(((( imp.title | tex ))))}%
+        {(((( imp.action | tex ))))}%
+        {(((( imp.measure | tex ))))}%
         {(((( imp.by_when | latex_escape ))))}
 ((*- endfor *))
 \end{tsImprovements}
@@ -235,17 +259,17 @@
 
 {\fontsize{9pt}{12pt}\selectfont\color{tsGrey} Each question is worth 1 mark. The 5-dimension rubric is applied to every question and weighted to a single mark using the formula on Page 1. Each box below shows the percentage scored on that dimension (big number) with the weighted contribution to the question total below (weight $\times$ score). Sub-scores per dimension: 1 (full), 0.5 (partial), 0 (none).}
 
-((*- for q in questions *))
+((*- for q in questions | sort(attribute='number') *))
 
 % --- Q(((( q.number ))))---
 \tsQFunc{(((( q.function_latex ))))}
-\tsQAnswer{(((( q.your_answer ))))}{(((( q.expected_answer ))))}
+\tsQAnswer{(((( q.your_answer | tex ))))}{(((( q.expected_answer | tex ))))}
 \tsQDimRow{(((( pct(q.dimensions.concept_understanding.score) ))))}{(((( pct(q.dimensions.approach_method.score) ))))}{(((( pct(q.dimensions.step_by_step.score) ))))}{(((( pct(q.dimensions.numerical_accuracy.score) ))))}{(((( pct(q.dimensions.presentation.score) ))))}
-\tsQFeedback{(((( q.feedback ))))}
+\tsQFeedback{(((( q.feedback | tex ))))}
 ((*- if q.scan_note and q.scan_note|trim *))
 \tsScanNote{(((( q.scan_note | latex_escape ))))}
 ((*- endif *))
-\begin{tsQCard}{(((( q.number ))))}{(((( q.topic | latex_escape ))))}{(((( q.scan_quality ))))}{(((( scan_color(q.scan_quality) ))))}{(((( "%.2f"|format(q.weighted_score) ))))}{1.00}
+\begin{tsQCard}{(((( q.number ))))}{(((( q.topic | tex ))))}{(((( q.scan_quality ))))}{(((( scan_color(q.scan_quality) ))))}{(((( "%.2f"|format(q.weighted_score) ))))}{1.00}
 \end{tsQCard}
 ((*- endfor *))
 
@@ -257,11 +281,11 @@
 
 \tsHone{Closing Note}
 
-(((( closing_note.intro ))))
+(((( closing_note.intro | tex ))))
 
 ((* if closing_note.what_signals *))
 \par\vspace{0.2cm}
-(((( closing_note.what_signals ))))
+(((( closing_note.what_signals | tex ))))
 ((* endif *))
 
 ((* if closing_note.next_steps *))
@@ -270,7 +294,7 @@
 
 \begin{tspoints}
 ((*- for ns in closing_note.next_steps *))
-    \item \textbf{(((( ns.label | latex_escape ))))}: (((( ns.text ))))
+    \item \textbf{(((( ns.label | latex_escape ))))}: (((( ns.text | tex ))))
 ((*- endfor *))
 \end{tspoints}
 ((* endif *))
@@ -292,6 +316,18 @@
 Across the (((( summary.total_questions ))))~questions: \textbf{\color{tsGreen}Excellent: (((( summary.scan_quality_breakdown.Excellent ))))} \ \textperiodcentered\ \textbf{\color{tsBlue}Good: (((( summary.scan_quality_breakdown.Good ))))} \ \textperiodcentered\ \textbf{\color{tsAmber}Acceptable: (((( summary.scan_quality_breakdown.Acceptable ))))} \ \textperiodcentered\ \textbf{\color{tsRed}Poor: (((( summary.scan_quality_breakdown.Poor ))))}
 
 \par\vspace{0.1cm}
-{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Scan quality affects how reliably the work can be evaluated. Each question's scan quality is logged on its individual card.}}
+{\fontsize{9pt}{12pt}\selectfont\color{tsGrey}\textit{Scan quality affects how reliably the work can be evaluated. Each question's scan quality is logged on its individual card. The tips below help you raise scan quality in future submissions.}}
+
+\par\vspace{0.5cm}
+\tsHone{Scanning Tips for Future Submissions}
+
+\par {\fontsize{9pt}{12pt}\selectfont\color{tsText} Clear scans help your evaluator focus on the mathematics instead of decoding the page. A few small habits make a big difference:}
+
+\tsScanningTips
+
+((* if summary.scan_quality_note is defined and summary.scan_quality_note *))
+\par\vspace{0.2cm}
+{\fontsize{9pt}{12pt}\selectfont\color{tsText}\textbf{Specific to your (((( assignment.code | latex_escape )))) submission:} (((( summary.scan_quality_note | tex ))))}
+((* endif *))
 
 \end{document}
